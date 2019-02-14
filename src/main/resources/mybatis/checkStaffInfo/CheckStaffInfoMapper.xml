@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ffcs.itm.web.check.checkStaffInfo.repository.CheckStaffInfoMapper">
+
+    <resultMap id="staffInfoMap" type="com.ffcs.itm.web.check.entity.StaffUser">
+        <id property="staffId" column="staff_id" />
+        <result property="staffname" column="staff_name" />
+    </resultMap>
+
+    <select id="selectListSx" parameterType="java.lang.String" resultMap="staffInfoMap">
+          select stf.staff_id ,stf.staff_name
+          from staff stf
+    </select>
+
+
+    <resultMap id="CheckInfoStaffMap" type="com.ffcs.itm.web.check.checkStaffInfo.entity.CheckStaffInfo">
+        <id property="staffId" column="STAFF_ID" />
+        <result property="beginDate" column="BEGIN_DATE" />
+        <result property="school" column="SCHOOL" />
+        <result property="baseAddress" column="BASE_ADDRESS" />
+        <result property="staffGroupType" column="STAFF_GROUP_TYPE" />
+        <result property="staffTeacherName" column="STAFF_TEACHER_NAME" />
+        <result property="major" column="MAJOR" />
+    </resultMap>
+
+    <resultMap id="CheckInfoStaffAndStaffMap" type="com.ffcs.itm.web.check.checkStaffInfo.entity.CheckStaffInfo">
+        <id property="staffId" column="STAFF_ID" />
+        <result property="beginDate" column="BEGIN_DATE" />
+        <result property="school" column="SCHOOL" />
+        <result property="baseAddress" column="BASE_ADDRESS" />
+        <result property="staffGroupType" column="STAFF_GROUP_TYPE" />
+        <result property="staffTeacherName" column="STAFF_TEACHER_NAME" />
+        <result property="major" column="MAJOR" />
+        <association property="staff" javaType="com.ffcs.itm.web.check.entity.StaffUser">
+            <id property="staffId" column="STAFF_ID" />
+            <result property="staffname" column="STAFF_NAME" />
+        </association>
+    </resultMap>
+
+    <insert id="addOneStaffInfo" parameterType="com.ffcs.itm.web.check.checkStaffInfo.entity.CheckStaffInfo">
+        insert into CHECK_STAFF_INFO csi
+          (STAFF_ID, BEGIN_DATE, SCHOOL, BASE_ADDRESS, STAFF_GROUP_TYPE,STAFF_TEACHER_NAME,MAJOR)
+        values
+          (#{csi.staffId}, to_date(#{csi.beginDate}, 'YYYY-MM-DD'), #{csi.school}, #{csi.baseAddress}, #{csi.staffGroupType},#{csi.staffTeacherName},#{csi.major})
+    </insert>
+
+    <select id="selectExist" parameterType="java.lang.Integer" resultType="java.lang.Integer">
+        SELECT count(*) FROM  CHECK_STAFF_INFO
+        WHERE
+        STAFF_ID=#{staffId}
+    </select>
+
+    <!--查看个人信息-->
+    <select id="selectMySelfMessage" parameterType="java.lang.Integer" resultMap="CheckInfoStaffAndStaffMap">
+       SELECT csi.STAFF_ID,csi.BEGIN_DATE,csi.SCHOOL,csi.BASE_ADDRESS,csi.STAFF_GROUP_TYPE,csi.STAFF_TEACHER_NAME,csi.MAJOR,
+        st.staff_name,st.staff_id
+         FROM CHECK_STAFF_INFO csi
+         LEFT JOIN Staff st
+           ON csi.STAFF_ID = st.STAFF_ID
+        where st.STAFF_ID = #{staffId}
+    </select>
+    
+    <delete id="delOneMessage" parameterType="java.lang.Integer">
+        DELETE  FROM CHECK_STAFF_INFO
+        WHERE
+        STAFF_ID = #{staffId}
+    </delete>
+
+    <update id="updateOneMessage" parameterType="com.ffcs.itm.web.check.checkStaffInfo.entity.CheckStaffInfo">
+        UPDATE CHECK_STAFF_INFO csi
+        SET
+          BEGIN_DATE=to_date(#{csi.beginDate}, 'YYYY-MM-DD'),
+          SCHOOL=#{csi.school},
+          BASE_ADDRESS=#{csi.baseAddress},
+          STAFF_GROUP_TYPE=#{csi.staffGroupType},
+          STAFF_TEACHER_NAME=#{csi.staffTeacherName},
+          MAJOR=#{csi.major}
+        WHERE STAFF_ID=#{csi.staffId}
+    </update>
+
+    <select id="selectAllstaffInfoList" resultMap="CheckInfoStaffAndStaffMap">
+        select csi.STAFF_ID,csi.BEGIN_DATE,csi.SCHOOL,csi.BASE_ADDRESS,csi.STAFF_GROUP_TYPE,csi.STAFF_TEACHER_NAME,csi.MAJOR,
+        st.staff_name
+         from CHECK_STAFF_INFO csi
+        LEFT JOIN staff st
+        on st.STAFF_ID = csi.STAFF_ID
+    </select>
+
+
+
+
+</mapper>

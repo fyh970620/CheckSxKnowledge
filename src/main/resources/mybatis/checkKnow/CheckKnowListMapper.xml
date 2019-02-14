@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ffcs.itm.web.check.checkKnow.repository.CheckKnowListMapper">
+
+    <resultMap id="ChecknowListResultMap" type="com.ffcs.itm.web.check.checkKnow.entity.CheckKonwList">
+        <id property="knowId" column="KNOW_ID"></id>
+        <result property="knowName" column="KNOW_NAME"></result>
+        <result property="knowRemark" column="KNOW_REMARK"></result>
+        <result property="knowType" column="KNOW_TYPE"></result>
+        <result property="knowDest" column="KNOW_DEST"></result>
+        <result property="knowTime" column="KNOW_TIME"></result>
+        <result property="knowGroupType" column="KNOW_GROUP_TYPE"></result>
+        <collection property="cklas"  ofType="com.ffcs.itm.web.check.checkKnow.entity.CheckKnowListAttach">
+                <id property="attachId" column="ATTACH_ID"></id>
+                <result property="attachName" column="ATTACH_NAME"></result>
+                <result property="attachRemark" column="ATTACH_REMARK"></result>
+                <result property="knowId" column="KNOW_ID"></result>
+        </collection>
+    </resultMap>
+    <resultMap id="CheckKonwListMap" type="com.ffcs.itm.web.check.checkKnow.entity.CheckKonwList">
+        <id property="knowId" column="KNOW_ID"></id>
+        <result property="knowName" column="KNOW_NAME"></result>
+        <result property="knowRemark" column="KNOW_REMARK"></result>
+        <result property="knowType" column="KNOW_TYPE"></result>
+        <result property="knowDest" column="KNOW_DEST"></result>
+        <result property="knowTime" column="KNOW_TIME"></result>
+        <result property="knowGroupType" column="KNOW_GROUP_TYPE"></result>
+    </resultMap>
+    <resultMap id="CheckKnowListAttachMap" type="com.ffcs.itm.web.check.checkKnow.entity.CheckKnowListAttach">
+        <id property="attachId" column="ATTACH_ID"></id>
+        <result property="attachName" column="ATTACH_NAME"></result>
+        <result property="attachRemark" column="ATTACH_REMARK"></result>
+        <result property="knowId" column="KNOW_ID"></result>
+    </resultMap>
+
+    <!--显示所有 know_group_type-->
+    <select id="selectCheckKnows" parameterType="java.lang.String" resultMap="CheckKonwListMap">
+        select * from check_know_list where know_Group_Type=#{knowGroupType}
+    </select>
+    <select id="selectListCheckKnowAttach" parameterType="java.lang.Integer" resultMap="CheckKnowListAttachMap">
+        select * from check_know_list_attach where know_Id=#{knowId}
+    </select>
+
+    <!-- 添加(主外键限制必须按照循序插入) -->
+    <insert id="CKLASecond" parameterType="com.ffcs.itm.web.check.checkKnow.entity.CheckKnowListAttach">
+        <selectKey resultType="java.lang.Integer" order="BEFORE" keyProperty="id">
+            SELECT check_know_list_seq.currval as id from dual
+        </selectKey>
+        insert into check_know_list_attach ckla(attach_id,ATTACH_NAME,ATTACH_REMARK,KNOW_ID)
+        values(check_know_list_attach_seq.nextval,#{ckla.attachName},#{ckla.attachRemark},#{id})
+    </insert>
+    <insert id="CKLaddFirst" parameterType="com.ffcs.itm.web.check.checkKnow.entity.CheckKonwList">
+        insert into check_know_list ckl(know_id, know_name, know_remark, know_type, know_dest, know_time, know_group_type)
+        values(check_know_list_seq.nextval, #{ckl.knowName}, #{ckl.knowRemark},#{ckl.knowType}, #{ckl.knowDest}, #{ckl.knowTime}, #{ckl.knowGroupType})
+    </insert>
+
+
+
+    <!--删除-->
+    <delete id="deleteOneCkla">
+        delete from check_know_list_attach  where know_id =#{knowId}
+    </delete>
+    <delete id="deleteOneCkl">
+        delete from check_know_list where know_id =#{knowId}
+    </delete>
+
+    <!--只删除附件-->
+    <delete id="delOnlyAttach" parameterType="java.lang.Integer">
+        DELETE  FROM check_know_list_attach WHERE ATTACH_ID=#{attachId}
+    </delete>
+
+    <update id="updateOneCKL" parameterType="com.ffcs.itm.web.check.checkKnow.entity.CheckKonwList">
+        update check_know_list ckl set
+          know_name =#{ckl.knowName},
+          know_remark=#{ckl.knowRemark},
+          know_dest = #{ckl.knowDest},
+          know_time=#{ckl.knowTime},
+          know_type=#{ckl.knowType}
+        where  know_id =#{ckl.knowId}
+    </update>
+
+    <insert id="onlyAddCheckKnow" parameterType="com.ffcs.itm.web.check.checkKnow.entity.CheckKnowListAttach">
+         insert into check_know_list_attach ckla(attach_id,ATTACH_NAME,ATTACH_REMARK,KNOW_ID)
+        values(check_know_list_attach_seq.nextval,#{ckla.attachName},#{ckla.attachRemark},#{ckla.knowId})
+    </insert>
+
+
+</mapper>

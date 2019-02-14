@@ -1,0 +1,12 @@
+*.iml
+*.idea
+*.swp
+*.swo
+out/
+target/
+build/
+.gradle/
+
+.settings/
+.classpath
+.project

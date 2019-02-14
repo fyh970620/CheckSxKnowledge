@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ffcs.itm.web.basic.repository.StaffLogMapper">
+    <insert id="addSysLog">
+        INSERT INTO SYS_LOG
+          (TP_MODULE_ID, LOG_CODE, STAFF_ID, DETAIL, CREATE_TIME)
+        VALUES
+          (#{logModuleInfo.moduleCode}, #{logModuleInfo.logCode}, #{staff.id}, #{staff.loginIp}, SYSDATE)
+    </insert>
+
+    <update id="updateStaffInLoginState">
+        UPDATE STAFF
+           SET STATE = '2VI', LOGIN_ID = #{loginId}
+         WHERE STAFF_ID = #{id}
+           AND STATE = '2VA'
+    </update>
+
+    <insert id="addUserSession">
+        INSERT INTO USER_LOGIN_HIS
+          (STAFF_ID, SESSION_ID, LOGIN_TIME)
+        VALUES
+          (#{staffId}, #{sessionId}, SYSDATE)
+    </insert>
+</mapper>

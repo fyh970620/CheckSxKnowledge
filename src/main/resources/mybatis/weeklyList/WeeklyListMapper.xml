@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ffcs.itm.web.check.weeklyList.repository.WeeklyListMapper">
+
+    <resultMap id="weekly_listMap" type="com.ffcs.itm.web.check.entity.CheckWeeklyList">
+        <id property="weeklyId" column="WEEKLY_ID"></id>
+        <result property="subjectName" column="SUBJECT_NAME"></result>
+        <result property="createStaffId" column="CREATE_STAFF_ID"></result>
+        <result property="subjectClass" column="SUBJECT_CLASS"></result>
+        <result property="createDate" column="CREATE_DATE"></result>
+        <result property="weeklyDesc" column="WEEKLY_DESC"></result>
+        <result property="nextWeeklyDesc" column="NEXT_WEEKLY_DESC"></result>
+        <result property="subjectGroupType" column="SUBJECT_GROUP_TYPE"></result>
+        <result property="keyWord" column="KEY_WORD"></result>
+        <result property="subjectNote" column="SUBJECT_NOTE"></result>
+        <result property="staffType" column="STAFF_TYPE"></result>
+        <result property="weeklyType" column="WEEKLY_TYPE"></result>
+        <collection property="cwlas"  ofType="com.ffcs.itm.web.check.weeklyList.entity.CheckWeeklyListAttach">
+            <id property="attachId" column="ATTACH_ID"></id>
+            <result property="attachName" column="ATTACH_NAME"></result>
+            <result property="attachRemark" column="ATTACH_REMARK"></result>
+            <result property="weeklyId" column="WEEKLY_ID"></result>
+        </collection>
+        <collection property="staff" javaType="com.ffcs.itm.web.check.entity.StaffUser">
+            <id property="staffId" column="STAFF_ID"/>
+            <result column="STAFF_NAME" property="staffname"/>
+        </collection>
+    </resultMap>
+    <resultMap id="weeklyListStaffMap" type="com.ffcs.itm.web.check.entity.CheckWeeklyList">
+        <id property="weeklyId" column="WEEKLY_ID"></id>
+        <result property="subjectName" column="SUBJECT_NAME"></result>
+        <result property="createStaffId" column="CREATE_STAFF_ID"></result>
+        <result property="subjectClass" column="SUBJECT_CLASS"></result>
+        <result property="createDate" column="CREATE_DATE"></result>
+        <result property="weeklyDesc" column="WEEKLY_DESC"></result>
+        <result property="nextWeeklyDesc" column="NEXT_WEEKLY_DESC"></result>
+        <result property="subjectGroupType" column="SUBJECT_GROUP_TYPE"></result>
+        <result property="keyWord" column="KEY_WORD"></result>
+        <result property="subjectNote" column="SUBJECT_NOTE"></result>
+        <result property="staffType" column="STAFF_TYPE"></result>
+        <result property="weeklyType" column="WEEKLY_TYPE"></result>
+    </resultMap>
+    <resultMap id="weeklyListAttachMap" type="com.ffcs.itm.web.check.weeklyList.entity.CheckWeeklyListAttach">
+        <id property="attachId" column="ATTACH_ID"></id>
+        <result property="attachName" column="ATTACH_NAME"></result>
+        <result property="attachRemark" column="ATTACH_REMARK"></result>
+        <result property="weeklyId" column="weekly_id"></result>
+    </resultMap>
+    <resultMap id="StaffMap" type="com.ffcs.itm.web.check.entity.StaffUser">
+        <id property="staffId" column="staff_Id"></id>
+        <result property="staffname" column="staff_name"></result>
+    </resultMap>
+
+
+    <!--查所有 分页-->
+    <select id="selectWeekListFy" resultMap="weeklyListStaffMap">
+          select * from Check_weekly_list
+    </select>
+    <select id="selectWeekListAttach" parameterType="java.lang.Integer" resultMap="weeklyListAttachMap">
+        select * from CHECK_WEEKLY_LIST_ATTACH where weekly_id=#{weeklyId}
+    </select>
+    <select id="selectStaff" parameterType="java.lang.Integer" resultMap="StaffMap" >
+        select * from staff where staff_Id=#{staffId}
+    </select>
+
+
+    <!--模糊查询-->
+    <select id="selectLikely" parameterType="java.lang.String"  resultMap="weekly_listMap" >
+        SELECT cwl.*, cwla.*, st.*
+        FROM (select rownum rn,cwl.weekly_id,cwl.subject_name,cwl.create_staff_id,
+        cwl.subject_class,cwl.weekly_desc,cwl.next_weekly_desc,cwl.subject_group_type
+        ,cwl.key_word,cwl.SUBJECT_NOTE,cwl.staff_type,cwl.weekly_type,
+        to_char(cwl.create_Date,'yyyy-mm-dd hh24:mi:ss') ccd
+        from CHECK_WEEKLY_LIST cwl) cwl,
+        CHECK_WEEKLY_LIST_ATTACH cwla,staff st
+        <where>
+            cwl.weekly_id = cwla.weekly_id and cwl.create_staff_id = st.staff_id
+                <if test="keywords!=null and keywords!='' ">
+                  AND (cwl.weekly_desc LIKE concat(concat('%',#{keywords}),'%')
+                    OR ccd like concat(concat('%',#{keywords}),'%')
+                    OR st.user_name like concat(concat('%',#{keywords}),'%') )
+                </if>
+        </where>
+    </select>
+
+    <!--查看周报详情-->
+    <select id="selectOnedetail" parameterType="java.lang.Integer" resultMap="weekly_listMap">
+        SELECT cwl.*, st.*
+        FROM  CHECK_WEEKLY_LIST cwl
+        left JOIN
+        staff st
+        ON
+        cwl.create_staff_id = st.staff_id
+        WHERE
+        cwl.weekly_id=#{weeklyId}
+    </select>
+    <select id="selectdetailAttach" parameterType="java.lang.Integer" resultMap="weeklyListAttachMap">
+        select * from CHECK_WEEKLY_LIST_ATTACH where weekly_id=#{weeklyId}
+    </select>
+
+
+    <!--update -->
+    <update id="updateOne" parameterType="com.ffcs.itm.web.check.entity.CheckWeeklyList">
+        update Check_weekly_list cwl
+        SET
+          createDate=sysdate,
+          subject_name=#{cwl.subjectName},
+          weekly_desc=#{cwl.weeklyDesc},
+          next_weekly_desc=#{cwl.nextWeeklyDesc},
+          SUBJECT_NOTE=#{cwl.subjectNote}
+        where
+          weekly_id=#{cwl.weeklyId}
+    </update>
+
+
+    <!--删除-->
+    <delete id="delOneFirst" parameterType="java.lang.Integer">
+        delete from Check_weekly_list_attach
+        where weekly_id=#{weeklyId}
+    </delete>
+    <delete id="delOneSecond" parameterType="java.lang.Integer">
+        delete from Check_weekly_list
+        where weekly_id=#{weeklyId}
+    </delete>
+
+    <!--插入新的周报-->
+    <insert id="addOneWeekly" parameterType="com.ffcs.itm.web.check.entity.CheckWeeklyList">
+        insert into Check_weekly_list cwl
+        (WEEKLY_ID ,SUBJECT_NAME ,CREATE_STAFF_ID ,SUBJECT_CLASS ,CREATE_DATE,
+        WEEKLY_DESC ,NEXT_WEEKLY_DESC ,SUBJECT_GROUP_TYPE ,KEY_WORD ,SUBJECT_NOTE ,STAFF_TYPE,WEEKLY_TYPE)
+        VALUES
+        (Check_weekly_list_seq.nextval ,#{cwl.subjectName} ,#{cwl.createStaffId} ,#{cwl.subjectClass} ,sysdate
+         ,#{cwl.weeklyDesc} ,#{cwl.nextWeeklyDesc} ,#{cwl.subjectGroupType} ,#{cwl.keyWord} ,#{cwl.subjectNote} ,#{cwl.staffType},#{cwl.weeklyType})
+    </insert>
+    <insert id="addWeeklyAttach" parameterType="com.ffcs.itm.web.check.weeklyList.entity.CheckWeeklyListAttach">
+        <selectKey resultType="java.lang.Integer" order="BEFORE" keyProperty="id">
+            SELECT Check_weekly_list_seq.currval as id from dual
+        </selectKey>
+        insert into Check_weekly_list_attach cwla
+        (ATTACH_ID ,ATTACH_NAME ,ATTACH_REMARK , WEEKLY_ID)
+        VALUES
+        (Check_weekly_list_attach_seq.nextval ,#{cwla.attachName} ,#{cwla.attachRemark} ,#{id})
+    </insert>
+
+    <!--添加附件(已有周报)-->
+    <insert id="OnlyAddWeeklyAttach" parameterType="com.ffcs.itm.web.check.weeklyList.entity.CheckWeeklyListAttach">
+        insert into Check_weekly_list_attach cwla
+        (ATTACH_ID ,ATTACH_NAME ,ATTACH_REMARK , WEEKLY_ID)
+        VALUES
+        (Check_weekly_list_attach_seq.nextval ,#{cwla.attachName} ,#{cwla.attachRemark} ,#{cwla.weeklyId})
+    </insert>
+
+    <select id="selectMyselfWeekly" parameterType="java.lang.Integer" resultMap="weeklyListStaffMap">
+        SELECT * FROM Check_weekly_list
+        WHERE
+        CREATE_STAFF_ID = #{staffId}
+    </select>
+
+</mapper>

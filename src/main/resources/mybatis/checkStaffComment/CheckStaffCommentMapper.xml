@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ffcs.itm.web.check.checkStaffComment.repository.CheckStaffCommentMapper">
+
+    <resultMap id="staffInfoMap" type="com.ffcs.itm.web.check.entity.StaffUser">
+        <id property="staffId" column="staff_id" />
+        <result property="staffname" column="staff_name" />
+    </resultMap>
+    <resultMap id="CheckStaffCommentMap" type="com.ffcs.itm.web.check.checkStaffComment.entity.CheckStaffComment">
+        <id property="checkId" column="CHECK_ID" />
+        <result property="checkStaffId" column="CHECK_STAFF_ID" />
+        <result property="visitCreateDate" column="VISIT_CREATE_DATE" />
+        <result property="staffId" column="STAFF_ID" />
+        <result property="collectRemark" column="COLLECT_REMARK" />
+        <result property="grade" column="GRADE" />
+        <result property="staffGroupType" column="STAFF_GROUP_TYPE" />
+    </resultMap>
+
+    <select id="selectCheckStaffComment" resultMap="CheckStaffCommentMap">
+        SELECT * FROM CHECK_STAFF_COMMENT
+    </select>
+    <select id="selectStaffDetail" resultMap="staffInfoMap">
+        SELECT * FROM  Staff WHERE  staff_id=#{keywords}
+    </select>
+
+    <insert id="addOneCheckStaffComment" parameterType="com.ffcs.itm.web.check.checkStaffComment.entity.CheckStaffComment">
+        insert into CHECK_STAFF_COMMENT csc
+          (CHECK_ID,
+           CHECK_STAFF_ID,
+           VISIT_CREATE_DATE,
+           STAFF_ID,
+           COLLECT_REMARK,
+           GRADE,
+           STAFF_GROUP_TYPE)
+        values
+          ( CHECK_STAFF_COMMENT_SEQ.nextval,
+          #{csc.checkStaffId},
+          to_date(#{csc.visitCreateDate},'yyyy-MM-dd'),
+          #{csc.staffId},
+          #{csc.collectRemark},
+          #{csc.grade},
+          #{csc.staffGroupType}
+          )
+    </insert>
+
+
+   <update id="updateOneCheckStaffComment" parameterType="com.ffcs.itm.web.check.checkStaffComment.entity.CheckStaffComment">
+       UPDATE CHECK_STAFF_COMMENT csc
+       SET
+           CHECK_STAFF_ID =#{csc.checkStaffId},
+           VISIT_CREATE_DATE=to_date(#{csc.visitCreateDate},'yyyy-MM-dd'),
+           STAFF_ID=#{csc.staffId},
+           COLLECT_REMARK=#{csc.collectRemark},
+           GRADE=#{csc.grade},
+           STAFF_GROUP_TYPE=#{csc.staffGroupType}
+      WHERE
+          CHECK_ID=#{csc.checkId}
+   </update>
+
+    <select id="selectDetail" parameterType="java.lang.Integer" resultMap="CheckStaffCommentMap">
+        SELECT * FROM CHECK_STAFF_COMMENT  csc WHERE  CHECK_STAFF_ID=#{checkStaffId}
+    </select>
+
+</mapper>

@@ -1,0 +1,9 @@
+logging:
+  level:
+    root: info
+
+spring:
+  sleuth:
+    sampler:
+      probability: 1
+    enabled: false

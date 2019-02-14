@@ -1,0 +1,37 @@
+mybatis:
+  type-aliases-package: com.ffcs.itm.web.**.entity
+  mapper-locations: classpath:mybatis/**/*.xml
+spring.session.timeoutMin: 240
+spring.session.store-type: none
+spring:
+  datasource:
+    driver-class-name: oracle.jdbc.OracleDriver
+    url: jdbc:oracle:thin:@192.168.17.200:1521/devdb
+    username: bosswg_sx
+    password: bosswg_sx
+    #url: jdbc:oracle:thin:@192.168.17.200:1521/devdb
+    #username: bosswg_kf
+    #password: bosswg
+  freemarker:
+    template-loader-path: classpath:/static
+    mvc:
+      static-path-pattern: classpath:/static
+  mvc:
+    favicon:
+      enabled: false
+
+
+##分页配置
+logging:
+     level:
+       com:
+       example:
+       demo:
+       dao: DEBUG
+pagehelper:
+      helperDialect: oracle
+      reasonable: true
+      supportMethodsArguments: true
+      params: count=countSql
+      page-size-zero: true
+

@@ -1,0 +1,372 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ffcs.itm.web.basic.repository.OrganizationMapper">
+	<resultMap id="OrganizationResult" type="com.ffcs.itm.web.basic.entity.Organization">
+		<id column="ORG_ID" jdbcType="DECIMAL" property="id" />
+		<result column="PARENT_ORG_ID" jdbcType="DECIMAL" property="parentId" />
+		<result column="ORG_NAME" jdbcType="VARCHAR" property="name" />
+		<result column="ORG_TYPE" jdbcType="VARCHAR" property="type" />
+		<result column="REGION_ID" jdbcType="DECIMAL" property="regionId" />
+		<result column="ORG_CONTENT" jdbcType="VARCHAR" property="content" />
+		<result column="T_LEVEL" jdbcType="DECIMAL" property="level" />
+		<result column="PRINCIPAL" jdbcType="DECIMAL" property="principal" />
+		<result column="STATE" jdbcType="VARCHAR" property="state" />
+		<result column="STATE_DATE" property="stateDate" />
+		<result column="SORT_ID" jdbcType="DECIMAL" property="sortId" />
+		<result column="ORG_CODE" jdbcType="VARCHAR" property="code" />
+	</resultMap>
+	
+	<resultMap id="OrganizationTreeItemDtoResult" type="com.ffcs.itm.web.basic.entity.dto.OrganizationTreeItemDto" extends="OrganizationResult">
+		<result column="CHILD_COUNT" jdbcType="DECIMAL" property="childCount" />
+		<result column="TAG" jdbcType="DECIMAL" property="tag"/>
+		<result column="ICON" jdbcType="VARCHAR" property="icon"/>
+		<result column="PARENT_ORG_ID" jdbcType="VARCHAR" property="open" typeHandler="com.ffcs.itm.web.basic.entity.dto.typeHandler.ZTreeOpenedHandler"/>
+		<result column="CHILD_COUNT" jdbcType="VARCHAR" property="isParent" typeHandler="com.ffcs.itm.web.basic.entity.dto.typeHandler.ZTreeLoadedHandler"/>
+	</resultMap>
+
+	<select id="findOne" resultMap="OrganizationResult">
+		SELECT *
+		  FROM ORGANIZATION
+		 WHERE ORG_ID = #{id}
+	</select>
+
+	<insert id="save">
+		<selectKey keyProperty="id" order="BEFORE" resultType="long">
+			SELECT ORGANIZATION_ID_SEQ.NEXTVAL FROM DUAL
+		</selectKey>
+		INSERT INTO ORGANIZATION
+		  (ORG_ID,
+		   PARENT_ORG_ID,
+		   ORG_NAME,
+		   ORG_TYPE,
+		   REGION_ID,
+		   ORG_CONTENT,
+		   T_LEVEL,
+		   STATE,
+		   STATE_DATE,
+		   SORT_ID)
+		  SELECT #{id}, #{parentId}, #{name}, #{type}, #{regionId}, #{content}, #{level}, '0SA', SYSDATE, NVL(MAX(SORT_ID), -1) + 1
+		    FROM ORGANIZATION
+		   WHERE PARENT_ORG_ID = #{parentId}
+	</insert>
+	
+	<update id="update">
+		UPDATE ORGANIZATION
+		<set>
+			<if test="name != null and name != '' ">
+				ORG_NAME = #{name}
+			</if>
+			<if test="type != null and type != '' ">
+				ORG_TYPE = #{type}
+			</if>
+			<if test="regionId != null">
+				REGION_ID = #{regionId}
+			</if>
+			<if test="content != null and content != '' ">
+				ORG_CONTENT = #{content}
+			</if>
+		</set>
+	     WHERE ORG_ID = #{id}
+	</update>
+	
+	<update id="delete">
+		UPDATE ORGANIZATION
+		   SET STATE = '0SX'
+		 WHERE ORG_ID IN (SELECT ORG_ID
+		                    FROM ORGANIZATION
+		                   WHERE STATE = '0SA'
+		                  CONNECT BY PRIOR ORG_ID = PARENT_ORG_ID
+		                   START WITH ORG_ID = #{id})
+	</update>
+	
+	<select id="getOrgTree" resultMap="OrganizationTreeItemDtoResult">
+		SELECT o.ORG_ID,
+				o.PARENT_ORG_ID,
+				o.ORG_NAME,
+				o.ORG_TYPE,
+				o.REGION_ID,
+				o.ORG_CONTENT,
+				o.T_LEVEL,
+				o.PRINCIPAL,
+				o.STATE,
+				o.STATE_DATE,
+				o.SORT_ID,
+				o.ORG_CODE,
+				DECODE(o.ORG_ID, 0, 'ORG_TOP', 'ORG') TAG,
+				'/assets/images/staffManage/organ.gif' ICON,
+		       (SELECT COUNT(*)
+		          FROM ORGANIZATION
+		         WHERE STATE = '0SA'
+		           AND ORG_TYPE != '20E'
+		           AND PARENT_ORG_ID = o.ORG_ID) CHILD_COUNT
+		  FROM ORGANIZATION o
+		  WHERE STATE = '0SA'
+		       AND (ORG_ID = #{orgId} OR PARENT_ORG_ID = #{orgId})
+		  ORDER BY SORT_ID ASC
+	</select>
+	
+	<select id="getOrgChildTree" resultMap="OrganizationTreeItemDtoResult">
+		SELECT o.ORG_ID,
+				o.PARENT_ORG_ID,
+				o.ORG_NAME,
+				o.ORG_TYPE,
+				o.REGION_ID,
+				o.ORG_CONTENT,
+				o.T_LEVEL,
+				o.PRINCIPAL,
+				o.STATE,
+				o.STATE_DATE,
+				o.SORT_ID,
+				o.ORG_CODE,
+				DECODE(o.ORG_ID, 0, 'ORG_TOP', 'ORG') TAG,
+				'/assets/images/staffManage/organ.gif' ICON,
+		       (SELECT COUNT(*)
+		          FROM ORGANIZATION
+		         WHERE STATE = '0SA'
+		           AND ORG_TYPE != '20E'
+		           AND PARENT_ORG_ID = o.ORG_ID) CHILD_COUNT
+		  FROM ORGANIZATION o
+		 WHERE STATE = '0SA'
+		   AND ORG_TYPE != '20E'
+		   AND PARENT_ORG_ID = #{orgId}
+		 ORDER BY SORT_ID ASC
+	</select>
+	
+	
+	<select id="getTopOrgTreeChildCount"   resultType="Integer" >
+		<![CDATA[
+			
+			SELECT COUNT(T.PARENT_ORG_ID) CHILD_COUNT
+			FROM (
+			    SELECT ORG_ID, ORG_NAME, LEVEL, T_LEVEL, SORT_ID, ORG_TYPE,PARENT_ORG_ID
+			          FROM ORGANIZATION
+			        CONNECT BY STATE = '0SA'
+			               AND ORG_TYPE <> '20E'
+			               AND PRIOR ORG_ID = PARENT_ORG_ID
+			               AND LEVEL <= #{level}
+			         START WITH ORG_ID in   (
+			             SELECT COLUMN_VALUE FROM TABLE(PKP_STRING_UTIL.inList(#{startOrgId}))
+			         ) 
+			
+			) T
+			WHERE T.PARENT_ORG_ID = #{startOrgId}
+		
+		]]>
+	</select>
+	
+	
+	<select id="getTopOrgTreeBySearchOrgPath" resultType="Map" >
+		<![CDATA[
+			SELECT DISTINCT ORG_ID,
+						ORG_NAME, 
+						SORT_ID, 
+						ORG_TYPE,
+						PARENT_ORG_ID,
+						'ORG'  
+						SEARCH_TYPE,
+						(
+							SELECT COUNT(T.ORG_ID) 
+                   			FROM ORGANIZATION T
+                  			WHERE T.PARENT_ORG_ID = A.ORG_ID 
+                            AND T.ORG_TYPE <> '20E' 
+                            AND T.STATE = '0SA'
+                  		) CHILD_COUNT
+			FROM 
+			(
+			   SELECT  ORG_ID, ORG_NAME, LEVEL , T_LEVEL, SORT_ID, ORG_TYPE,PARENT_ORG_ID
+			          FROM ORGANIZATION
+			        CONNECT BY STATE = '0SA'
+			               AND ORG_TYPE <> '20E'
+			               AND PRIOR ORG_ID = PARENT_ORG_ID
+			               AND LEVEL <= 2
+			         START WITH ORG_ID in   (
+			             SELECT COLUMN_VALUE FROM TABLE(PKP_STRING_UTIL.inList(#{searchOrgPath}))
+						   )
+			) A
+			ORDER BY A.ORG_ID , A.PARENT_ORG_ID
+			
+		]]>
+	</select>
+	
+	<select id="getTopOrgTree" resultType="Map" >
+		<![CDATA[
+			 SELECT 
+			 	ORG_ID, 
+			 	ORG_NAME, 
+			 	LEVEL, 
+			 	T_LEVEL, 
+			 	SORT_ID, 
+			 	ORG_TYPE,
+			 	PARENT_ORG_ID,
+			 	'ORG'  SEARCH_TYPE,
+			 	 (
+			 	 		SELECT COUNT(T.ORG_ID) 
+                   		FROM ORGANIZATION T
+                  		WHERE T.PARENT_ORG_ID = A.ORG_ID 
+                            AND T.ORG_TYPE <> '20E' 
+                            AND T.STATE = '0SA'
+                  ) CHILD_COUNT
+			    		FROM ORGANIZATION A
+			  CONNECT BY STATE = '0SA'
+			         AND ORG_TYPE <> '20E'
+			         AND PRIOR ORG_ID = PARENT_ORG_ID
+			         AND LEVEL <= 2
+			   START WITH ORG_ID in   (
+			   		SELECT COLUMN_VALUE FROM TABLE(PKP_STRING_UTIL.inList(#{startOrgId}))
+			   )
+			   
+			   ORDER BY ORG_ID,PARENT_ORG_ID
+		]]>
+	</select>
+	
+	<select id="getTopOrgTreeWhere" resultType="Map" >
+	<![CDATA[
+			SELECT ORG_ID, 
+						ORG_NAME, 
+						LEVEL, 
+						T_LEVEL, 
+						SORT_ID, 
+						ORG_TYPE,
+						PARENT_ORG_ID,
+						'ORG'  SEARCH_TYPE,
+						 (
+						 	SELECT COUNT(T.ORG_ID) 
+		                   	FROM ORGANIZATION T
+		                  	WHERE T.PARENT_ORG_ID = A.ORG_ID 
+                            AND T.ORG_TYPE <> '20E' 
+                            AND T.STATE = '0SA'
+		                 ) CHILD_COUNT
+			  FROM (SELECT ORG_ID,
+			               ORG_NAME,
+			               LEVEL,
+			               T_LEVEL,
+			               SORT_ID,
+			               ORG_TYPE,
+			               PARENT_ORG_ID
+			          FROM ORGANIZATION 
+			         WHERE STATE = '0SA'
+			        CONNECT BY ORG_ID = prior PARENT_ORG_ID
+			        START WITH ORG_ID = #{orgId}) A
+			CONNECT BY PRIOR ORG_ID = PARENT_ORG_ID
+			 START WITH ORG_ID in (
+			 	SELECT COLUMN_VALUE FROM TABLE(PKP_STRING_UTIL.inList(#{startOrgId}))
+			 ) 
+			 ORDER BY A.ORG_ID,A.PARENT_ORG_ID
+			 ]]>
+	</select>
+	
+	<update id="updateName">
+		UPDATE ORGANIZATION
+		   SET ORG_NAME = #{1}
+		 WHERE ORG_ID = #{0}
+	</update>
+	
+	<select id="getGropuSeqId"  resultType="long">
+		SELECT GROUP_ID_SEQ.NEXTVAL  GROUP_ID_SEQ FROM DUAL
+	</select>
+	
+	<insert id="saveProjectDefined">
+		insert into project_group
+		  (GROUP_ID,
+		   PARENT_GROUP_ID,
+		   ORG_ID,
+		   PROJECT_GROUP_TYPE,
+		   GROUP_NAME,
+		   GROUP_GOAL,
+		   LEADER,
+		   CREATED_DATE,
+		   STATE,
+		   STATE_DATE,
+		   REGION_ID,
+		   DEFINE_STAFF,
+		   SORT_ID,
+		   GROUP_DESC,
+		   REMARK)
+		values
+		  (#{groupId},
+		   null,
+		   null,
+		   'DEFINE',
+		   #{groupName},
+		   null,
+		   null,
+		   sysdate,
+		   '0SA',
+		   sysdate,
+		   null,
+		   #{defineStaffId},
+		   null,
+		   null,
+		   null) 
+	</insert>
+		
+	<delete id="deleteProjectGroup">
+		delete from project_group where group_id = #{groupId}
+	</delete>
+	
+	<insert id="saveUserFavGroupConfig">
+		insert into user_favorite_group_cfg
+		  (USER_FAVORITE_GROUP_CFG_ID, STAFF_ID, GROUP_ID)
+		values
+		  (USER_FAVORITE_GROUP_CFG_ID_SEQ.Nextval, #{staffId}, #{groupId})
+	</insert>
+	
+	<delete id="deleteUserFavGroupConfig">
+		delete from user_favorite_group_cfg where STAFF_ID = #{staffId} and GROUP_ID =#{groupId}
+	</delete>
+	
+	<insert id='saveStaffGroup'>
+		insert into staff_project_group
+ 			 (STAFF_ID, GROUP_ID, STATE, EFF_DATE, EXP_DATE, DUTY, TASK)
+		values
+  			 (#{staffId}, #{groupId}, '0SA', null, null, '', '') 
+	</insert>
+	
+	<delete id="deleteStaffGroup">
+		delete from staff_project_group where group_id = #{groupId}
+	</delete>
+	
+	<delete id="deleteStaffGroupConfig">
+		delete from PROJECT_GROUP_STAFF_CFG where group_id = #{groupId}
+	</delete>
+	
+	<select  id="deltaImport"  resultType="Map">
+		SELECT STRCAT(PG.GROUP_ID) GROUP_IDS, SPG.STAFF_ID STAFF_ID
+		  FROM STAFF_PROJECT_GROUP SPG, PROJECT_GROUP PG
+		 WHERE SPG.GROUP_ID = PG.GROUP_ID
+		   AND PG.PROJECT_GROUP_TYPE IN ('TEAM', 'DEFINE')
+		   AND SPG.STATE = '0SA'
+		   AND PG.STATE = '0SA'
+		   AND SPG.STAFF_ID IN (SELECT * FROM TABLE(PKP_STRING_UTIL.INLIST(#{staffIds})))
+		 GROUP BY SPG.STAFF_ID
+	</select>
+	
+	<update id="updateProjectGroup">
+		update project_group p set p.group_name = #{groupName},p.state_date=sysdate where p.group_id = #{groupId}
+	</update>
+	
+	<select id="searchOrgPathByOrgId"  resultType="Map">
+		select o.org_id, SYS_CONNECT_BY_PATH(o.org_id, ',') path
+		  from organization o
+		 where o.org_id in 
+		 <foreach collection="orgIds" index="index" item="orgId" open="(" separator="," close=")">  
+			#{orgId}  
+		</foreach>
+		 start with o.parent_org_id is null
+		connect by prior o.org_id = o.parent_org_id
+		
+	</select>
+	
+	<select id="loadStaffGroupConfigByGroupId"  resultType="Map">
+		SELECT G.STAFF_ID,
+	       G.STATE,
+	       G.GROUP_ID,
+	       G.EFF_DATE,
+	       G.EXP_DATE,
+	       G.DUTY,
+	       G.TASK,
+	       G.SORT_ID
+	  FROM STAFF_PROJECT_GROUP G
+	 WHERE G.GROUP_ID = #{groupId}
+	</select>
+</mapper>

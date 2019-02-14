@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ffcs.itm.web.check.checkSubject.repository.CheckSubjectListMapper">
+
+    <resultMap id="CheckSubjectListResultMap" type="com.ffcs.itm.web.check.checkSubject.entity.CheckSubjectList">
+        <id property="subjectId" column="SUBJECT_ID"></id>
+        <result property="subjectName" column="SUBJECT_NAME"></result>
+        <result property="subjectRemark" column="SUBJECT_REMARK"></result>
+        <result property="subjectType" column="SUBJECT_TYPE"></result>
+        <result property="subjectDest" column="SUBJECT_DEST"></result>
+        <result property="subjectTime" column="SUBJECT_TIME"></result>
+        <result property="subjectGroupType" column="SUBJECT_GROUP_TYPE"></result>
+        <collection property="csjla"  ofType="com.ffcs.itm.web.check.checkSubject.entity.CheckSubjectListAttach">
+                <id property="attachId" column="ATTACH_ID"></id>
+                <result property="attachName" column="ATTACH_NAME"></result>
+                <result property="attachRemark" column="ATTACH_REMARK"></result>
+                <result property="subjectId" column="SUBJECT_ID"></result>
+        </collection>
+    </resultMap>
+    <resultMap id="CheckSubjectListMap" type="com.ffcs.itm.web.check.checkSubject.entity.CheckSubjectList">
+        <id property="subjectId" column="SUBJECT_ID"></id>
+        <result property="subjectName" column="SUBJECT_NAME"></result>
+        <result property="subjectRemark" column="SUBJECT_REMARK"></result>
+        <result property="subjectType" column="SUBJECT_TYPE"></result>
+        <result property="subjectDest" column="SUBJECT_DEST"></result>
+        <result property="subjectTime" column="SUBJECT_TIME"></result>
+        <result property="subjectGroupType" column="SUBJECT_GROUP_TYPE"></result>
+    </resultMap>
+    <resultMap id="CheckSubjectListAttachMap" type="com.ffcs.itm.web.check.checkSubject.entity.CheckSubjectListAttach">
+        <id property="attachId" column="ATTACH_ID"></id>
+        <result property="attachName" column="ATTACH_NAME"></result>
+        <result property="attachRemark" column="ATTACH_REMARK"></result>
+        <result property="subjectId" column="SUBJECT_ID"></result>
+    </resultMap>
+
+    <select id="selectAllSubjectAndAttach" resultMap="CheckSubjectListResultMap">
+        SELECT * FROM CHECK_SUBJECT_LIST CSL
+        LEFT JOIN
+          CHECK_SUBJECT_LIST_ATTACH ASLA
+        ON
+          CSL.SUBJECT_ID = ASLA.SUBJECT_ID
+        Order by
+          CSL.SUBJECT_ID
+        ASC
+    </select>
+
+    <select id="selectDetail" parameterType="java.lang.Integer" resultMap="CheckSubjectListResultMap">
+        SELECT * FROM CHECK_SUBJECT_LIST CSL
+        LEFT JOIN
+          CHECK_SUBJECT_LIST_ATTACH ASLA
+        ON
+          CSL.SUBJECT_ID = ASLA.SUBJECT_ID
+        WHERE CSL.SUBJECT_ID = #{subjectId}
+    </select>
+
+    <update id="updateOneSubject" parameterType="com.ffcs.itm.web.check.checkSubject.entity.CheckSubjectList">
+        UPDATE CHECK_SUBJECT_LIST CSL
+        SET
+          CSL.SUBJECT_NAME = #{csl.subjectName},
+          CSL.SUBJECT_REMARK = #{csl.subjectRemark},
+          CSL.SUBJECT_TYPE = #{csl.subjectType},
+          CSL.SUBJECT_DEST = #{csl.subjectDest},
+          CSL.SUBJECT_TIME = #{csl.subjectTime},
+          CSL.SUBJECT_GROUP_TYPE = #{csl.subjectGroupType}
+        WHERE
+          CSL.SUBJECT_ID = #{csl.subjectId}
+    </update>
+    <insert id="CKLaddFirst" parameterType="com.ffcs.itm.web.check.checkSubject.entity.CheckSubjectList">
+        insert into CHECK_SUBJECT_LIST
+        (SUBJECT_ID,
+        SUBJECT_NAME,
+        SUBJECT_REMARK,
+        SUBJECT_TYPE,
+        SUBJECT_DEST,
+        SUBJECT_TIME,
+        SUBJECT_GROUP_TYPE)
+        values
+        (CHECK_SUBJECT_LIST_SEQ.nextval,
+        #{csl.subjectName},
+        #{csl.subjectRemark},
+       #{csl.subjectType},
+        #{csl.subjectDest},
+        #{csl.subjectTime},#{csl.subjectGroupType})
+    </insert>
+    <insert id="CKLASecond" parameterType="com.ffcs.itm.web.check.checkSubject.entity.CheckSubjectListAttach">
+        <selectKey resultType="java.lang.Integer" order="BEFORE" keyProperty="id">
+            SELECT CHECK_SUBJECT_LIST_SEQ.currval as id from dual
+        </selectKey>
+        insert into CHECK_SUBJECT_LIST_ATTACH csla(ATTACH_ID,ATTACH_NAME,ATTACH_REMARK,SUBJECT_ID)
+        values(CHECK_SUBJECT_LIST_ATTACH_SEQ.nextval,#{csla.attachName},#{csla.attachRemark},#{id})
+    </insert>
+
+    <insert id="OnlyInsertAttach" parameterType="com.ffcs.itm.web.check.checkSubject.entity.CheckSubjectListAttach">
+           insert into CHECK_SUBJECT_LIST_ATTACH csla(ATTACH_ID,ATTACH_NAME,ATTACH_REMARK,SUBJECT_ID)
+         values(CHECK_SUBJECT_LIST_ATTACH_SEQ.nextval,#{csla.attachName},#{csla.attachRemark},#{csla.subjectId})
+    </insert>
+
+    <delete id="deleteAttachOnly" parameterType="java.lang.Integer">
+        DELETE  FROM CHECK_SUBJECT_LIST_ATTACH
+        WHERE ATTACH_ID=#{attachId}
+    </delete>
+
+    <delete id="deleteAll" parameterType="java.lang.Integer">
+      DELETE  FROM CHECK_SUBJECT_LIST WHERE SUBJECT_ID = #{subjectId}
+    </delete>
+    <delete id="deleteList" parameterType="java.lang.Integer">
+        DELETE  FROM  CHECK_SUBJECT_LIST_ATTACH WHERE SUBJECT_ID = #{subjectId}
+    </delete>
+
+</mapper>

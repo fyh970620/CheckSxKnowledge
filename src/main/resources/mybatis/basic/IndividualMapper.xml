@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ffcs.itm.web.basic.repository.IndividualMapper">
+	<resultMap id="IndividualResult" type="com.ffcs.itm.web.basic.entity.Individual">
+		<id column="INDIVIDUAL_ID" jdbcType="DECIMAL" property="id" />
+		<result column="STAFF_ID" jdbcType="DECIMAL" property="staffId" />
+		<result column="GENDER" jdbcType="VARCHAR" property="gender" />
+		<result column="BIRTH_PLACE" jdbcType="VARCHAR" property="birthPlace" />
+		<result column="BIRTH_DATE" jdbcType="DATE" property="birthDate" />
+		<result column="MARITAL_STATUS" jdbcType="VARCHAR" property="maritalStatus" />
+		<result column="SKILL" jdbcType="VARCHAR" property="skill" />
+		<result column="SKILL2" jdbcType="VARCHAR" property="skill2" />
+	</resultMap>
+	
+	<insert id="save">
+		INSERT INTO INDIVIDUAL
+		  (INDIVIDUAL_ID,
+		   STAFF_ID,
+		   GENDER,
+		   BIRTH_PLACE,
+		   BIRTH_DATE,
+		   MARITAL_STATUS,
+		   SKILL,
+		   SKILL2)
+		VALUES
+		  (INDIVIDUAL_ID_SEQ.NEXTVAL,
+		   #{staffId},
+		   #{gender},
+		   #{birthPlace},
+		   #{birthDate},
+		   #{maritalStatus},
+		   #{skill},
+		   #{skill2})
+	</insert>
+	
+	<update id="update">
+		UPDATE INDIVIDUAL
+		   SET GENDER         = #{gender},
+		       BIRTH_PLACE    = #{birthPlace},
+		       BIRTH_DATE     = #{birthPlace},
+		       MARITAL_STATUS = #{maritalStatus},
+		       SKILL          = #{skill},
+		       SKILL2         = #{skill2}
+		 WHERE STAFF_ID = #{staffId}
+	</update>
+</mapper>

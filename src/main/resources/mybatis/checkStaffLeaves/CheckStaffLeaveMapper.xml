@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ffcs.itm.web.check.checkStaffLeave.repository.CheckStaffLeaveMapper">
+
+
+    <resultMap id="CheckStaffLeaveMap" type="com.ffcs.itm.web.check.checkStaffLeave.entity.CheckStaffLeave">
+        <id property="leaveId" column="LEAVE_ID" />
+        <result property="checkStaffId" column="CHECK_STAFF_ID" />
+        <result property="beginLeaveDate" column="BEGIN_LEAVE_DATE" />
+        <result property="endLeaveDate" column="END_LEAVE_DATE" />
+        <result property="leaveDay" column="LEAVE_DAY" />
+        <result property="staffGroupType" column="STAFF_GROUP_TYPE" />
+        <association property="staff" javaType="com.ffcs.itm.web.check.entity.StaffUser">
+            <id property="staffId" column="STAFF_ID" />
+            <result property="staffname" column="STAFF_NAME" />
+        </association>
+    </resultMap>
+
+    <!--请假表 本人可以查看-->
+    <select id="selectYourCheckMap" parameterType="java.lang.Integer" resultMap="CheckStaffLeaveMap">
+        SELECT csl.LEAVE_ID,csl.CHECK_STAFF_ID,csl.BEGIN_LEAVE_DATE,
+          csl.END_LEAVE_DATE,csl.LEAVE_DAY,csl.STAFF_GROUP_TYPE,st.*
+         FROM CHECK_STAFF_LEAVE CSL
+          LEFT JOIN  Staff st
+        ON CSL.CHECK_STAFF_ID = st.STAFF_ID
+          WHERE CHECK_STAFF_ID =#{staffId}
+    </select>
+
+   <insert id="addOneStaffLeave">
+      insert into CHECK_STAFF_LEAVE csl
+          (LEAVE_ID,
+           CHECK_STAFF_ID,
+           BEGIN_LEAVE_DATE,
+           END_LEAVE_DATE,
+           LEAVE_DAY,
+           STAFF_GROUP_TYPE)
+        values
+          (CHECK_STAFF_LEAVE_SEQ.nextval,
+          #{csl.checkStaffId},
+          to_date(#{csl.beginLeaveDate},'yyyy-mm-dd hh24:mi:ss'),
+          to_date(#{csl.endLeaveDate},'yyyy-mm-dd hh24:mi:ss'),
+          #{csl.leaveDay},
+          #{csl.staffGroupType})
+   </insert>
+
+    <delete id="delOneStaffLeave" parameterType="java.lang.Integer">
+        DELETE  FROM CHECK_STAFF_LEAVE
+        WHERE
+        LEAVE_ID=#{leaveId}
+    </delete>
+
+
+
+
+</mapper>

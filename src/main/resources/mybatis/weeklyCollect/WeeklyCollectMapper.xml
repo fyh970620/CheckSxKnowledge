@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ffcs.itm.web.check.weeklyList.repository.WeeklyCollectMapper">
+
+    <resultMap id="weeklyCollectMap" type="com.ffcs.itm.web.check.weeklyList.entity.CheckWeeklyCollect">
+        <id property="collectId" column="COLLECT_ID"></id>
+        <result property="collectStaffId" column="COLLECT_STAFF_ID"></result>
+        <result property="visitCreateDate" column="VISIT_CREATE_DATE"></result>
+        <result property="weeklyId" column="WEEKLY_ID"></result>
+        <result property="collectRemark" column="COLLECT_REMARK"></result>
+    </resultMap>
+    <resultMap id="staffMap" type="com.ffcs.itm.web.check.entity.StaffUser">
+        <id property="staffId" column="STAFF_ID"/>
+        <result column="staffname" property="STAFF_NAME"/>
+    </resultMap>
+    <resultMap id="weeklyListStaffMap" type="com.ffcs.itm.web.check.entity.CheckWeeklyList">
+        <id property="weeklyId" column="WEEKLY_ID"></id>
+        <result property="subjectName" column="SUBJECT_NAME"></result>
+        <result column="KEY_WORD" property="keyWord"></result>
+    </resultMap>
+
+    <select id="getMyCollects" parameterType="java.lang.Integer" resultMap="weeklyCollectMap">
+        select CWC.*
+         from
+        CHECK_WEEKLY_COLLECT CWC
+          where
+         CWC.COLLECT_STAFF_ID=#{staffId}
+    </select>
+    <select id="selectStaffname" parameterType="java.lang.Integer" resultMap="staffMap">
+        select st.STAFF_ID ,st.STAFF_NAME
+        from
+        staff st
+        WHERE st.STAFF_ID=#{staffId}
+    </select>
+    <select id="selectWeekListName" parameterType="java.lang.Integer" resultMap="weeklyListStaffMap">
+         SELECT cwl.SUBJECT_NAME,cwl.WEEKLY_ID,cwl.KEY_WORD
+          FROM
+          Check_weekly_list cwl
+          WHERE cwl.WEEKLY_ID=#{weeklyId}
+    </select>
+
+    <insert id="AddOneCollect" parameterType="com.ffcs.itm.web.check.weeklyList.entity.CheckWeeklyCollect">
+        insert into CHECK_WEEKLY_COLLECT cwc
+          (COLLECT_ID,
+           COLLECT_STAFF_ID,
+           VISIT_CREATE_DATE,
+           WEEKLY_ID,
+           COLLECT_REMARK)
+        values
+          (CHECK_WEEKLY_COLLECT_seq.Nextval, #{cwc.collectStaffId}, sysdate, #{cwc.weeklyId}, #{cwc.collectRemark})
+    </insert>
+
+    <update id="ModiMyCollectRemark" parameterType="com.ffcs.itm.web.check.weeklyList.entity.CheckWeeklyCollect">
+        UPDATE CHECK_WEEKLY_COLLECT CWC
+        SET
+        CWC.VISIT_CREATE_DATE=sysdate,
+        CWC.COLLECT_REMARK=#{cwc.collectRemark}
+        WHERE
+        CWC.COLLECT_ID=#{cwc.collectId}
+    </update>
+
+    <delete id="delOneCollect" parameterType="java.lang.Integer">
+        DELETE  FROM CHECK_WEEKLY_COLLECT CWC
+        WHERE
+        CWC.COLLECT_ID=#{collectId}
+    </delete>
+
+    <!-- 已经收藏的不能重复被收藏 -->
+    <select id="selectExist" parameterType="java.lang.Integer" resultMap="weeklyCollectMap">
+        SELECT * FROM CHECK_WEEKLY_COLLECT WHERE WEEKLY_ID=#{weeklyId}
+    </select>
+
+    <delete id="delCollectByWeekly" parameterType="java.lang.Integer">
+        DELETE  FROM CHECK_WEEKLY_COLLECT
+        WHERE
+        WEEKLY_ID=#{weeklyId}
+    </delete>
+
+
+
+</mapper>

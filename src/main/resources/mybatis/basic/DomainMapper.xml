@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ffcs.itm.web.common.repository.DomainMapper">
+	<resultMap id="DomainResult" type="com.ffcs.itm.web.common.entity.Domain">
+		<result column="LIST_VALUE" jdbcType="VARCHAR" property="value" />
+		<result column="LIST_LABEL" jdbcType="VARCHAR" property="label" />
+		<result column="REMARK" jdbcType="VARCHAR" property="remark" />
+		<result column="DOMAIN_CODE" jdbcType="VARCHAR" property="domainCode" />
+	</resultMap>
+	
+	<select id="getListByCode" resultMap="DomainResult">
+		SELECT	LIST_VALUE,LIST_LABEL,REMARK
+			FROM TP_DOMAIN_LISTVALUES WHERE DOMAIN_CODE = #{code} and state='0SA'
+			ORDER BY SORT_ID
+	</select>
+
+	<select id="getListByCodeLists" resultMap="DomainResult">
+		SELECT	LIST_VALUE,LIST_LABEL,REMARK,DOMAIN_CODE
+		FROM TP_DOMAIN_LISTVALUES WHERE  state='0SA'
+		and DOMAIN_CODE IN
+		<foreach collection="domainCode" index="index" item="item" open="(" separator="," close=")">
+			#{item}
+		</foreach>
+		ORDER BY DOMAIN_CODE, SORT_ID
+	</select>
+</mapper>

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ffcs.itm.web.basic.repository.CodeMapper">
+	
+	<resultMap id="CodeDtoResult" type="com.ffcs.itm.web.basic.entity.dto.CodeDto">
+		<result column="CODE" jdbcType="VARCHAR" property="value" />
+		<result column="MEAN" jdbcType="VARCHAR" property="label" />
+	</resultMap>
+	
+	<select id="getCodeList" resultMap="CodeDtoResult">
+		<![CDATA[
+			select code, mean from codelist where code_type = #{CODE_TYPE}
+	    ]]>
+	</select>
+</mapper>

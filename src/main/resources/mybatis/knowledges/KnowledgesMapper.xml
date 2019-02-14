@@ -1,0 +1,552 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ffcs.itm.web.knowledges.repository.KnowledgesMapper">
+
+    <resultMap id="Knowledge" type="com.ffcs.itm.web.knowledges.entity.Knowledge">
+        <result column="KNOWLEDGE_ID" jdbcType="DECIMAL" property="knowledgeId" />
+        <result column="FLOW_SERIAL" jdbcType="VARCHAR" property="flowSerial" />
+        <result column="TITLE" jdbcType="VARCHAR" property="title" />
+        <result column="CATALOG_ID" jdbcType="DECIMAL" property="catalogId" />
+        <result column="CATALOG_NAME" jdbcType="VARCHAR" property="catalogName" />
+        <result column="CONTENTS" jdbcType="CLOB" property="contents" />
+        <result column="CONTENT" jdbcType="CLOB" property="content" />
+        <result column="OPERATE_STAFF" jdbcType="DECIMAL" property="staffId" />
+        <result column="STAFF_NAME" jdbcType="VARCHAR" property="staffName" />
+        <result column="HIT_COUNT" jdbcType="DECIMAL" property="hitCount" />
+        <result column="CREATE_DATE" jdbcType="VARCHAR" property="createDate" />
+        <result column="EXPIRE_DATE" jdbcType="VARCHAR" property="expireDate" />
+        <result column="SOURCE_TYPE" jdbcType="VARCHAR" property="sourceType" />
+        <result column="RANK" jdbcType="VARCHAR" property="rank" />
+        <result column="RANK_NAME" jdbcType="VARCHAR" property="rankName" />
+        <result column="TYPE" jdbcType="VARCHAR" property="type" />
+        <result column="TYPE_NAME" jdbcType="VARCHAR" property="typeName" />
+        <result column="STATE" jdbcType="VARCHAR" property="state" />
+        <result column="GRADE" jdbcType="DECIMAL" property="grade" />
+        <collection property="attachments" resultMap="Attachment"/>
+        <collection property="keyWords" resultMap="KeyWord"/>
+    </resultMap>
+
+    <resultMap id="KeyWord" type="com.ffcs.itm.web.knowledges.entity.KeyWord">
+        <result column="KEYWORD_ID" jdbcType="DECIMAL" property="keyWordId" />
+        <result column="KEYWORD" jdbcType="VARCHAR" property="keyWord" />
+    </resultMap>
+
+    <resultMap id="Attachment" type="com.ffcs.itm.web.knowledges.entity.Attachment">
+        <result column="ATTACHEMENT_ID" jdbcType="DECIMAL" property="attachId" />
+        <result column="ATTACHMENT_PATH" jdbcType="VARCHAR" property="attachPath" />
+        <result column="ATTACHMENT_NAME" jdbcType="VARCHAR" property="attachName" />
+    </resultMap>
+
+    <select id="getSysConfig" resultType="java.lang.String">
+      select t.SYS_VAR_VALUE from sys_config t where t.sys_var = #{sysVar}
+    </select>
+
+    <select id="getKnowledgeState" resultType="java.lang.String">
+      select t.state from knowledges t where t.knowledge_id = #{knowledgeId}
+    </select>
+
+    <select id="getFlowSerial" resultType="java.util.HashMap">
+        select #{name}||to_char(sysdate,'_yyyymmdd_')||lpad(${seqName}.nextval,4,'0') flow_serial from dual
+    </select>
+
+    <select id="getMenu" resultType="java.util.HashMap">
+      select t.CATALOG_ID,t.PARENT_CATALOG_ID,t.CATALOG_NAME,t.IS_FOLDER,t.TYPE,1 pri
+          from knowledge_catalog t
+        where t.state = '0SA'
+        connect by prior t.catalog_id = t.parent_catalog_id
+         start with t.catalog_id in
+        <foreach collection="catalogId.split(',')" item="id" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+         ORDER SIBLINGS BY sort_id
+    </select>
+
+    <select id="getKnowledgesByPage" resultType="java.util.HashMap">
+        select t.knowledge_id,
+                t.flow_serial,
+                t.subject,
+                b.manage_staff,
+                c.staff_name,
+                nvl2(t.hit_count, t.hit_count, 0) hit_count,
+                (select count(*)
+                from KNOWLEDGE_GRADE kg
+                where kg.knowledge_id = t.knowledge_id and kg.grade is null and kg.grade_rela_id is null) comment_count,
+                to_char(b.MANAGE_TIME, 'yyyy-mm-dd hh24:mi:ss') state_time,
+                to_char(t.expire_date, 'yyyy-mm-dd hh24:mi:ss') expire_date,
+                t.source_type,
+                cl.mean type,
+                tpl.list_label rank
+        from knowledges t,
+            knowledge_manage b,
+            staff c,
+            (select code, mean from codelist where code_type = 'GD_TITLE_TYPE') cl,
+            (select list_value, list_label
+            from tp_domain_listvalues
+            where domain_code = 'DOMAIN_KNOWLEDGE_RANK') tpl
+            where c.staff_id = b.manage_staff
+            and cl.code(+) = t.title_type
+            and tpl.list_value(+) = t.kn_rank
+            and t.knowledge_id = b.knowledge_id
+            and b.manage_type = '4SA'
+        <choose>
+            <when test="params != null and params.state != null and params.state != '' and params.state == '4SA'">
+                and t.state = '4SA'
+                and b.manage_staff = #{params.staffId}
+            </when>
+            <otherwise>
+                and t.state = '4SB'
+            </otherwise>
+        </choose>
+        <if test="params != null and params.catalogId != null and params.catalogId != '' and params.catalogId != -1">
+            AND t.CATALOG_ID in (select catalog_id
+                                        from knowledge_catalog
+                                        where state = '0SA'
+                                        start with catalog_id = #{params.catalogId}
+                                        connect by prior catalog_id = parent_catalog_id)
+        </if>
+        <if test="params != null and params.sourceType != null and params.sourceType != ''">
+            AND t.source_type = #{params.sourceType}
+        </if>
+           order by t.state_date desc
+    </select>
+
+    <update id="delKnowledgesById">
+        update knowledges set state='4SD' where knowledge_id in
+        <if test="knowledgeIds != null and knowledgeIds.length > 0">
+            <foreach collection="knowledgeIds" item="id" index="index" open="(" close=")" separator=",">
+                #{id}
+            </foreach>
+        </if>
+    </update>
+
+    <select id="getKeyWord" resultType="java.util.HashMap">
+        SELECT * FROM KNOWLEDGE_KEYWORD
+        <if test="keyWord != null and keyWord != ''">
+            where keyword = #{keyWord}
+        </if>
+    </select>
+
+    <insert id="addKnowledge">
+        <selectKey keyProperty="knowledgeId" order="BEFORE" resultType="long">
+            SELECT KNOWLEDGE_ID_SEQ.NEXTVAL FROM DUAL
+        </selectKey>
+
+        insert into knowledges
+                (KNOWLEDGE_ID, CATALOG_ID, SUBJECT, CONTENT, SOURCE_TYPE, STATE, STATE_DATE, KN_RANK, TITLE_TYPE, FLOW_SERIAL, EXPIRE_DATE, EXPIRE_DEAL_TYPE, auto_delay_num)
+        values
+                (#{knowledgeId}, #{catalogId}, #{title}, #{content,jdbcType = CLOB}, #{sourceType}, #{state}, sysdate, #{rank}, #{type}, #{flowSerial},
+        <choose>
+            <when test="sourceType != null and sourceType == 'KNOW'">
+                ADD_MONTHS(sysdate, 60),
+            </when>
+            <otherwise>
+                to_date(#{expireDate},'yyyy-mm-dd hh24:mi:ss'),
+            </otherwise>
+        </choose>
+        '3',
+        1
+        )
+    </insert>
+
+    <update id="updKnowledge">
+        update knowledges
+            set CATALOG_ID  = #{catalogId},
+                SUBJECT     = #{title},
+                CONTENT     = #{content, jdbcType = CLOB},
+                STATE       = #{state},
+                STATE_DATE  = sysdate,
+                KN_RANK     = #{rank},
+                TITLE_TYPE  = #{type},
+                EXPIRE_DATE =
+        <choose>
+            <when test = "sourceType != null and sourceType == 'KNOW'" >
+                  ADD_MONTHS(sysdate, 60)
+            </when>
+            <otherwise>
+                to_date(#{expireDate}, 'yyyy-mm-dd hh24:mi:ss')
+            </otherwise>
+        </choose>
+        where KNOWLEDGE_ID = #{knowledgeId}
+    </update>
+
+    <insert id="insertKnowledgeManage">
+        insert into knowledge_manage (MANAGE_ID, KNOWLEDGE_ID, MANAGE_STAFF, MANAGE_TIME, MANAGE_TYPE)
+        values (KN_MANAGE_ID_SEQ.Nextval, #{knowledgeId}, #{staffId}, sysdate, #{type})
+    </insert>
+
+    <insert id="insertKnowledgeOperate">
+      insert into KNOWLEDGES_OPERATE (OPERATE_ID, OPERATE_CONTENT, OPERATE_TIME, OPERATE_STAFF, KNOWLEDGE_ID, OPERATE_TYPE)
+      values (KN_OPERATE_ID_SEQ.nextval, #{content}, sysdate, #{staffId}, #{knowledgeId}, #{type})
+    </insert>
+
+    <update id="updKnowledgeManage">
+        update knowledge_manage set manage_time = sysdate where knowledge_id = #{knowledgeId} and manage_staff = #{staffId} and manage_type = #{type}
+    </update>
+
+    <update id="updKnowledgeOperate">
+        update knowledges_operate set operate_time = sysdate where knowledge_id  = #{knowledgeId} and operate_staff = #{staffId} and operate_type = #{type}
+    </update>
+
+    <insert id="addAttachment">
+        <selectKey keyProperty="attachId" order="BEFORE" resultType="long">
+            SELECT attachment_id_seq.NEXTVAL FROM DUAL
+        </selectKey>
+
+        insert into attachments (ATTACHEMENT_ID, ATTACHMENT_PATH, ATTACHMENT_NAME, ATTACHMENT_TYPE)
+        values (#{attachId},#{attachPath}, #{attachName}, '1')
+    </insert>
+
+    <insert id="addKnowAttachRel">
+        insert into knowledge_attachment (ATTACHEMENT_ID, KNOWLEDGE_ID)
+            values (#{attachId}, #{knowledgeId})
+    </insert>
+
+    <delete id="delAttachment">
+        delete from attachments where ATTACHEMENT_ID = #{attachId}
+    </delete>
+
+    <delete id="delKnowAttachRel">
+        delete from knowledge_attachment where KNOWLEDGE_ID = #{knowledgeId} and ATTACHEMENT_ID = #{attachId}
+    </delete>
+
+    <insert id="addKeyWord">
+        <selectKey keyProperty="keyWordId" order="BEFORE" resultType="long">
+            SELECT KN_KEYWORD_ID_SEQ.NEXTVAL FROM DUAL
+        </selectKey>
+
+        insert into knowledge_keyword (KEYWORD_ID, KEYWORD)
+        values (#{keyWordId}, #{keyWord})
+    </insert>
+
+    <insert id="addKnKeyWordRel">
+        insert into knowledge_keyword_relation (KEYWORD_ID, KNOWLEDGE_ID)
+            values (#{keyWordId}, #{knowledgeId})
+    </insert>
+
+    <delete id="delKnKeyWordRel">
+        delete from knowledge_keyword_relation where KNOWLEDGE_ID = #{knowledgeId}
+    </delete>
+
+    <update id="addKnowledgeRead">
+        update knowledges set hit_count = hit_count+1  where knowledge_id = #{knowledgeId}
+    </update>
+
+    <select id="getKnowledgeById" resultMap="Knowledge">
+        select a.knowledge_id,
+               a.flow_serial,
+               a.source_type,
+               a.subject title,
+               a.catalog_id,
+               i.catalog_name,
+               a.subject || ';' || i.catalog_name || ';'|| a.content CONTENTS,
+               a.content,
+               d.manage_staff operate_staff,
+               (select staff_name from staff where staff_id = d.manage_staff ) staff_name,
+               a.hit_count,
+               (select to_char(t.MANAGE_TIME, 'yyyy-mm-dd hh24:mi:ss') from knowledge_manage t where t.manage_type ='4SA' and t.KNOWLEDGE_ID = a.knowledge_id) create_date,
+               to_char(a.expire_date, 'yyyy-mm-dd hh24:mi:ss') expire_date,
+               a.kn_rank rank,
+               g.list_label rank_name,
+               a.title_type type,
+               h.mean type_name,
+               a.state,
+               b.keyword_id,
+               b.keyword,
+               f.attachement_id,
+               f.attachment_path,
+               f.attachment_name,
+               (select t.grade from knowledge_grade t where t.grade is not null and t.grade_rela_id is null and t.knowledge_id = #{knowledgeId} and t.graded_staff = #{staffId}) grade
+          from knowledges a,knowledge_keyword b,knowledge_keyword_relation c,knowledge_manage d,
+          knowledge_attachment e, attachments f,(select list_value,list_label from tp_domain_listvalues where domain_code = 'DOMAIN_KNOWLEDGE_RANK') g,
+          (select t.code,t.mean from codelist t where t.code_type = 'GD_TITLE_TYPE') h,knowledge_catalog i
+          where a.knowledge_id = c.knowledge_id(+)
+          and c.keyword_id = b.keyword_id(+)
+          and d.knowledge_id = a.knowledge_id
+          and d.manage_type = '4SA'
+          and e.knowledge_id(+) = a.knowledge_id
+          and f.attachement_id(+) = e.attachement_id
+          and g.list_value(+) = a.kn_rank
+          and h.code(+) = a.title_type
+          and i.catalog_id = a.catalog_id
+          --and a.state &lt;&gt; '4SD'
+          and a.knowledge_id = #{knowledgeId}
+    </select>
+
+    <select id="getComment" resultType="java.util.HashMap">
+        select b.*
+        from (select a.*, rownum rn
+        from (select t.grade_id,
+        t.grade_rela_id,
+        t.COMMMENT,
+        t.graded_date graded_date,
+        t.grade,
+        (select staff_name
+        from staff
+        where staff_id = t.GRADED_STAFF) STAFF_NAME,
+        (select staff_name
+        from staff a, KNOWLEDGE_GRADE b
+        where a.staff_id = b.GRADED_STAFF
+        and b.grade_id = t.GRADE_RELA_ID) PA_STAFF_NAME,
+        t.STATE,
+        t.GRADED_STAFF,
+        (select s.nice_id
+        from KNOWLEDGE_NICE s
+        where s.grade_id = t.grade_id
+        and s.staff_id = #{params.staffId}) k_nice,
+        (select count(grade_id)
+        from KNOWLEDGE_NICE s
+        where s.grade_id = t.grade_id) k_nice_count,
+        count(*) over() as num
+        from knowledge_grade t
+        where t.knowledge_id = #{params.knowledgeId}
+        and t.grade is null
+        and t.grade_rela_id is null
+        order by t.graded_date desc) a
+        where rownum &lt;= #{params.end}) b
+        where b.rn &gt;= #{params.start}
+    </select>
+
+    <select id="getInnerComment" resultType="java.util.HashMap">
+        with t as
+        (select *
+        from knowledge_grade t
+        where t.knowledge_id = #{params.knowledgeId}
+        and t.grade is null
+        and level != 1
+        start with t.grade_id = #{params.gradeId}
+        connect by prior t.grade_id = t.grade_rela_id
+        order by t.graded_date)
+        select b.*
+        from (select a.*, rownum rn
+        from (select t.grade_id,
+        t.grade_rela_id,
+        t.COMMMENT,
+        t.graded_date graded_date,
+        t.grade,
+        (select staff_name
+        from staff
+        where staff_id = t.GRADED_STAFF) STAFF_NAME,
+        (select staff_name
+        from staff a, KNOWLEDGE_GRADE b
+        where a.staff_id = b.GRADED_STAFF
+        and b.grade_id = t.GRADE_RELA_ID) PA_STAFF_NAME,
+        t.STATE,
+        t.GRADED_STAFF,
+        (select s.nice_id
+        from KNOWLEDGE_NICE s
+        where s.grade_id = t.grade_id
+        and s.staff_id = #{params.staffId}) k_nice,
+        (select count(grade_id)
+        from KNOWLEDGE_NICE s
+        where s.grade_id = t.grade_id) k_nice_count,
+        count(*) over() as num
+        from t) a
+        where rownum &lt;= #{params.end}) b
+        where b.rn &gt;= #{params.start}
+
+    </select>
+
+    <select id="getNice" resultType="java.util.HashMap">
+        select * from knowledge_nice where KNOWLEDGE_ID = #{params.knowledgeId} and STAFF_ID = #{params.staffId} and GRADE_ID = #{params.gradeId}
+    </select>
+
+    <insert id="addNice">
+        <selectKey keyProperty="params.niceId" order="BEFORE" resultType="long">
+            SELECT knowledge_nice_id_seq.nextval FROM DUAL
+        </selectKey>
+        insert into knowledge_nice (KNOWLEDGE_ID, STAFF_ID, GRADE_ID, NICE_ID, SUBMIT_TIME)
+        values (#{params.knowledgeId}, #{params.staffId}, #{params.gradeId}, #{params.niceId}, sysdate)
+    </insert>
+
+    <delete id="rmNice">
+        delete from knowledge_nice where NICE_ID = #{niceId}
+    </delete>
+
+    <select id="isGraded" resultType="java.util.HashMap">
+        select * from knowledge_grade where KNOWLEDGE_ID = #{params.knowledgeId} and GRADED_STAFF = #{params.staffId} and GRADE is not null
+    </select>
+
+    <insert id="addGrade">
+        insert into knowledge_grade (GRADE_ID, KNOWLEDGE_ID, GRADED_STAFF, GRADE)
+            values (kn_grade_id_seq.nextval, #{params.knowledgeId}, #{params.staffId},#{params.grade})
+    </insert>
+
+    <update id="updGrade">
+        update knowledge_grade set GRADE = #{params.grade} where GRADE_ID = #{params.gradeId}
+    </update>
+
+    <insert id="addComment">
+        <selectKey keyProperty="params.grade_id" order="BEFORE" resultType="long">
+            SELECT kn_grade_id_seq.nextval FROM DUAL
+        </selectKey>
+        insert into knowledge_grade (GRADE_ID, KNOWLEDGE_ID, GRADED_STAFF, COMMMENT, GRADED_DATE, GRADE_RELA_ID, STATE, COMMENT_TYPE)
+            values (#{params.grade_id}, #{params.knowledgeId}, #{params.staffId}, #{params.comment}, sysdate, #{params.pGradeId}, '0SA', '3')
+    </insert>
+
+    <update id="removeComment">
+        update knowledge_grade set state = '0SX' where GRADE_ID = #{gradeId}
+    </update>
+
+    <select id="getGradeAvg" resultType="java.util.HashMap">
+        select count(*) num,nvl(avg(t.grade),0) avg_grade from knowledge_grade t where t.grade is not null and t.knowledge_id = #{knowledgeId}
+    </select>
+
+    <select id="getOperateHis" resultType="java.util.HashMap">
+        select a.knowledge_id,a.manage_staff operate_staff,c.staff_name,a.manage_type operate_type,b.list_label operate,a.manage_time OPERATE_TIME
+              from knowledge_manage a,
+                   (SELECT LIST_VALUE, LIST_LABEL
+                      FROM TP_DOMAIN_LISTVALUES
+                     WHERE DOMAIN_CODE = 'DOMAIN_KN_OPERATE_TYPE') b,
+                     staff c
+             where a.manage_staff  = c.staff_id
+             and a.knowledge_id =#{knowledgeId}
+             and a.manage_type  = b.list_value
+             order by a.manage_time  desc
+    </select>
+
+    <select id="getExportContent" resultType="java.util.HashMap">
+        select a.flow_serial,
+                a.subject title,
+                (select staff_name from staff where staff_id = d.manage_staff ) staff_name,
+                (select count(*)
+                from KNOWLEDGE_GRADE kg
+                where kg.knowledge_id = a.knowledge_id
+                and kg.grade is null and kg.grade_rela_id is null)|| '/' ||
+                nvl(a.hit_count, 0) read_comment,
+                (select to_char(t.MANAGE_TIME, 'yyyy-mm-dd hh24:mi:ss')
+                from knowledge_manage t
+                where t.manage_type = '4SA'
+                and t.KNOWLEDGE_ID = a.knowledge_id) create_date,
+                to_char(a.EXPIRE_DATE, 'yyyy-mm-dd hh24:mi:ss') EXPIRE_DATE,
+                g.list_label rank_name,
+                h.mean type_name
+                from knowledges a,
+                knowledge_manage d,
+                (select list_value, list_label
+                from tp_domain_listvalues
+                where domain_code = 'DOMAIN_KNOWLEDGE_RANK') g,
+                (select t.code, t.mean
+                from codelist t
+                where t.code_type = 'GD_TITLE_TYPE') h
+                where d.knowledge_id = a.knowledge_id
+                and d.manage_type  = '4SA'
+                and g.list_value(+) = a.kn_rank
+                and h.code(+) = a.title_type
+                and a.knowledge_id in
+            <foreach collection="knowledgeIds" item="kId" open="(" separator="," close=")">
+                #{kId}
+            </foreach>
+    </select>
+
+    <!--目录管理-->
+    <select id="getMenuPri" resultType="java.util.HashMap">
+        with b as
+         (select c.catalog_id,
+                 c.parent_catalog_id,
+                 c.CATALOG_NAME,
+                 c.SORT_ID,
+                 c.IS_FOLDER,
+                 c.TYPE,
+                 max(c.pri) pri
+            from (select distinct t.*, 1 pri
+                    from knowledge_catalog t
+                   where t.state = '0SA'
+                   start with exists (select a.catalog_id
+                                 from knowledge_catalog_config a
+                                where a.staff_id = #{staffId}
+                                  and a.oprt_cfg = 'CREATE'
+                                  and a.catalog_id = t.catalog_id)
+                  connect by prior t.catalog_id = t.parent_catalog_id
+                  union all
+                  select distinct t.*, 0 pri
+                    from knowledge_catalog t
+                   where t.state = '0SA'
+                   start with exists (select a.catalog_id
+                                 from knowledge_catalog_config a
+                                where a.staff_id = #{staffId}
+                                  and a.oprt_cfg = 'CREATE'
+                                  and a.catalog_id = t.catalog_id)
+                  connect by t.catalog_id = prior t.parent_catalog_id) c
+           group by c.catalog_id,
+                    c.parent_catalog_id,
+                    c.CATALOG_NAME,
+                    c.SORT_ID,
+                    c.IS_FOLDER,
+                    c.TYPE)
+        select *
+          from b
+         start with b.catalog_id in
+        <foreach collection="catalogId.split(',')" item="id" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+        connect by prior b.catalog_id = b.parent_catalog_id
+        order siblings by b.sort_id
+    </select>
+
+    <select id="getMenuType" resultType="java.util.HashMap">
+        select t.catalog_id,
+               t.parent_catalog_id,
+               t.CATALOG_NAME,
+               t.SORT_ID,
+               t.IS_FOLDER,
+               t.TYPE
+          from knowledge_catalog t
+          where t.state = '0SA'
+         start with t.type = #{type}
+                and t.parent_catalog_id  in
+        <foreach collection="catalogId.split(',')" item="id" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+        connect by prior t.catalog_id = t.parent_catalog_id
+         order siblings by t.sort_id
+    </select>
+
+    <select id="hasChildCatalog" resultType="java.lang.Integer">
+        select count(*) from knowledge_catalog where parent_catalog_id = #{catalogId} and state = '0SA'
+    </select>
+
+    <select id="hasKnowledge" resultType="java.lang.Integer">
+          select count(*) from knowledges where catalog_id = #{catalogId} and state &lt;&gt; '4SB'
+    </select>
+
+    <update id="delCatalog">
+        update knowledge_catalog set state = '0SX' where catalog_id = #{catalogId}
+    </update>
+
+    <update id="updCatalog">
+        update knowledge_catalog set catalog_name = #{name} where catalog_id = #{catalogId}
+    </update>
+
+    <insert id="addCatalog">
+        <selectKey keyProperty="params.CATALOG_ID" order="BEFORE" resultType="long">
+            SELECT kn_catalog_id_seq.nextval FROM DUAL
+        </selectKey>
+        insert into knowledge_catalog (CATALOG_ID, PARENT_CATALOG_ID, CATALOG_NAME, IS_FOLDER, TYPE, SORT_ID)
+        select #{params.CATALOG_ID}, #{params.PARENT_CATALOG_ID}, #{params.CATALOG_NAME}, #{params.IS_FOLDER}, #{params.TYPE},(select nvl(max(sort_id)+1,1) from knowledge_catalog where PARENT_CATALOG_ID
+        <choose>
+            <when test="params != null and params.PARENT_CATALOG_ID != null and params.PARENT_CATALOG_ID != ''">
+                = #{params.PARENT_CATALOG_ID}
+            </when>
+            <otherwise>
+                is null
+            </otherwise>
+        </choose>
+        ) from dual
+    </insert>
+
+    <update id="dragCatalog"  statementType="CALLABLE">
+		{call pkp_knowledge.dragKnowledgeCatalog(#{params.catalogId}, #{params.targetCatalogId}, #{params.moveType})}
+	</update>
+
+    <select id="getCatalogIds" resultType="String">
+        select replace(strcat(catalog_id),',',' ')
+            from knowledge_catalog
+            where state = '0SA' and IS_FOLDER = 0
+            start with catalog_id = #{catalogId}
+            connect by prior catalog_id = parent_catalog_id
+    </select>
+
+    <select id="getState" resultType="String">
+        select state from knowledges where knowledge_id = #{knowledgeId}
+    </select>
+</mapper>

@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ffcs.itm.web.check.weeklyList.repository.WeeklyListCommentsMapper">
+
+    <resultMap id="weeklyCommentsMap" type="com.ffcs.itm.web.check.weeklyList.entity.CheckWeeklyListComment">
+        <id property="commentId" column="COMMENT_ID"></id>
+        <result property="commentParentId" column="COMMENT_PARENT_ID"></result>
+        <result property="comment" column="COMMENT"></result>
+        <result property="commentGrade" column="COMMENT_GRADE"></result>
+        <result property="commentDate" column="COMMENT_DATE"></result>
+        <result property="commentStaffId" column="COMMENT_STAFF_ID"></result>
+        <result property="weeklyId" column="WEEKLY_ID"></result>
+    </resultMap>
+    <resultMap id="StaffMap" type="com.ffcs.itm.web.check.entity.StaffUser">
+        <id property="staffId" column="staff_id"></id>
+        <result property="staffname" column="staff_name"></result>
+    </resultMap>
+
+    <select id="selectByParentId" parameterType="java.lang.Integer" resultMap="weeklyCommentsMap">
+        SELECT cwlc.* FROM CHECK_WEEKLY_LIST_COMMENT cwlc WHERE COMMENT_ID=#{commentParentId}
+    </select>
+
+    <!--查询所有评论并分页-->
+    <select id="selectAllCommentsInId" resultMap="weeklyCommentsMap" parameterType="java.lang.Integer">
+        select * from
+        (select * from CHECK_WEEKLY_LIST_COMMENT cwlc
+                start with comment_id=0
+                connect by prior
+                comment_id = comment_parent_id) cwl
+        where cwl.weekly_Id = #{weeklyId} and comment_parent_id=0
+    </select>
+    <!--and comment_parent_id=0-->
+    <select id="selectDetailStaff" resultMap="StaffMap" parameterType="java.lang.Integer">
+        select * from
+            staff
+            where
+            staff_Id = #{staffId}
+    </select>
+    <select id="selectAllCommentsChridren" resultMap="weeklyCommentsMap" parameterType="java.lang.Integer">
+        select * from
+        (select * from CHECK_WEEKLY_LIST_COMMENT cwlc
+        start with comment_id=#{commentId}
+        connect by prior
+        comment_id = comment_parent_id) cwl
+        where cwl.weekly_Id = #{weeklyId} and  comment_parent_id=#{commentParentId}
+    </select>
+    <select id="selectAllCommentsChridren2" resultMap="weeklyCommentsMap" parameterType="java.lang.Integer">
+        select * from
+        (select * from CHECK_WEEKLY_LIST_COMMENT cwlc
+        start with comment_id=#{commentId}
+        connect by prior
+        comment_id = comment_parent_id) cwl
+        where cwl.weekly_Id = #{weeklyId}
+    </select>
+
+    <insert id="insertTopComment" parameterType="com.ffcs.itm.web.check.weeklyList.entity.CheckWeeklyListComment">
+        insert into CHECK_WEEKLY_LIST_COMMENT cwlc(
+           COMMENT_ID,
+           COMMENT_PARENT_ID,
+           "COMMENT",
+           COMMENT_GRADE,
+           COMMENT_DATE,
+           COMMENT_STAFF_ID,
+           WEEKLY_ID)
+        values(
+            CHECK_WEEKLY_LIST_COMMENT_seq.nextval,
+            0,
+            #{cwlc.comment},
+            #{cwlc.commentGrade},
+            sysdate,
+            #{cwlc.commentStaffId},
+            #{cwlc.weeklyId})
+    </insert>
+
+    <insert id="insertCommentBack" parameterType="com.ffcs.itm.web.check.weeklyList.entity.CheckWeeklyListComment">
+        insert into CHECK_WEEKLY_LIST_COMMENT cwlc(
+        COMMENT_ID,
+        COMMENT_PARENT_ID,
+        "COMMENT",
+        COMMENT_GRADE,
+        COMMENT_DATE,
+        COMMENT_STAFF_ID,
+        WEEKLY_ID)
+        values(
+        CHECK_WEEKLY_LIST_COMMENT_seq.nextval,
+        #{cwlc.commentParentId},
+        #{cwlc.comment},
+        #{cwlc.commentGrade},
+        sysdate,
+        #{cwlc.commentStaffId},
+        #{cwlc.weeklyId})
+    </insert>
+
+    <delete id="delOneComments" parameterType="java.lang.Integer">
+        DELETE  FROM
+        CHECK_WEEKLY_LIST_COMMENT
+        WHERE COMMENT_ID=#{commentId}
+    </delete>
+    <delete id="delCommentsByWeekly" parameterType="java.lang.Integer">
+        DELETE  FROM
+        CHECK_WEEKLY_LIST_COMMENT
+        WHERE WEEKLY_ID=#{weeklyId}
+    </delete>
+
+
+    <!--评价率 -->
+    <select id="selectOneAvg" parameterType="java.lang.Integer" resultType="java.lang.Double">
+        select avg(comment_grade) from CHECK_WEEKLY_LIST_COMMENT where weekly_Id=#{weeklyId} and comment_parent_id=0
+    </select>
+
+</mapper>

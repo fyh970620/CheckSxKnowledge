@@ -1,0 +1,304 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ffcs.itm.web.basic.repository.StaffMapper">
+	<resultMap id="StaffResult" type="com.ffcs.itm.web.basic.entity.Staff">
+		<id column="STAFF_ID" jdbcType="DECIMAL" property="id" />
+		<result column="PASSWD" jdbcType="VARCHAR" property="passwd" />
+		<result column="USER_NAME" jdbcType="VARCHAR" property="userName" />
+		<result column="STAFF_NAME" jdbcType="VARCHAR" property="staffName" />
+		<result column="PWD_EXP_DATE" jdbcType="DATE" property="pwdExpDate" />
+		<result column="SCOPE_LEVEL" jdbcType="VARCHAR" property="scopeLevel" />
+		
+		<result column="PARENT_STAFF_ID" jdbcType="DECIMAL" property="parentId" />
+		<result column="PARENT_STAFF_NAME" jdbcType="DECIMAL" property="parentName" />
+		
+		<result column="STAFFB_ID" jdbcType="DECIMAL" property="staffbId" />
+		<result column="STAFFB_NAME" jdbcType="VARCHAR" property="staffbName" />
+		<result column="STAFFC_ID" jdbcType="DECIMAL" property="staffcId" />
+		<result column="STAFFC_NAME" jdbcType="VARCHAR" property="staffcName" />
+		
+		<result column="STAFF_DESC" jdbcType="VARCHAR" property="staffDesc" />
+		<result column="STAFF_POST" jdbcType="VARCHAR" property="staffPost" />
+		<result column="STAFF_LEVEL" jdbcType="VARCHAR" property="staffLevel" />
+		<result column="REGION_ID" jdbcType="DECIMAL" property="regionId" />
+		<result column="STATE" jdbcType="VARCHAR" property="state" />
+		<result column="LOGIN_ID" jdbcType="VARCHAR" property="loginId" />
+		<result column="CENSOR_MSG" jdbcType="VARCHAR" property="censorMsg" />
+		<result column="STATE_DATE" jdbcType="DATE" property="stateDate" />
+		<result column="CENSOR_STAFF" jdbcType="DECIMAL" property="censorStaff" />
+		<result column="CENSOR_DATE" jdbcType="DATE" property="censorDate" />
+		<result column="IS_OUTER_NET_USER" jdbcType="VARCHAR" property="isOuterNetUser" />
+		<result column="SORT_ID" jdbcType="DECIMAL" property="sortId" />
+		<result column="DEL_FLAG" jdbcType="VARCHAR" property="delFlag" />
+		<result column="PRI_LEVEL" jdbcType="VARCHAR" property="priLevel" />
+		<result column="ACC_CERT_ID" jdbcType="VARCHAR" property="accCertId" />
+		<result column="STAFF_TYPE" jdbcType="VARCHAR" property="staffType" />
+		<result column="CALLED_NAME" jdbcType="VARCHAR" property="calledName" />
+
+		<result column="REGION_LEVEL" jdbcType="VARCHAR" property="regionLevel" />
+
+		<!-- IndividualResult 定义在 IndividualMapper.xml 中 -->
+		<association property="individual" resultMap="com.ffcs.itm.web.basic.repository.IndividualMapper.IndividualResult"/>
+		
+		<association property="staffContact" resultMap="com.ffcs.itm.web.basic.repository.StaffContactMapper.StaffContactResult"/>
+		
+		<association property="organization" fetchType="lazy" javaType="com.ffcs.itm.web.basic.entity.Organization" column="ORG_ID" select="com.ffcs.itm.web.basic.repository.OrganizationMapper.findOne"></association>
+		
+	</resultMap>
+	
+	<select id="findOne" resultMap="StaffResult">
+		SELECT s.*, i.*, c.*, staffParent.STAFF_NAME PARENT_STAFF_NAME, staffB.STAFF_NAME STAFFB_NAME, staffC.STAFF_NAME STAFFC_NAME
+		  FROM STAFF s
+		  LEFT JOIN INDIVIDUAL i ON s.STAFF_ID = i.STAFF_ID
+		  LEFT JOIN STAFF_CONTACT c ON s.STAFF_ID = c.STAFF_ID
+		  LEFT JOIN STAFF staffParent ON s.PARENT_STAFF_ID = staffParent.STAFF_ID
+		  LEFT JOIN STAFF staffB ON s.STAFFB_ID = staffB.STAFF_ID
+		  LEFT JOIN STAFF staffC ON s.STAFFC_ID = staffC.STAFF_ID
+		 WHERE s.STAFF_ID = #{id}
+	</select>
+	
+	
+	<select id="findStaffByIds"  resultType="Map">
+		SELECT s.*,i.*, c.*,
+       				staffParent.STAFF_NAME PARENT_STAFF_NAME,
+       				staffB.STAFF_NAME STAFFB_NAME,
+       				staffC.STAFF_NAME STAFFC_NAME,
+       				 (
+		                SELECT wm_concat(B.ORG_ID)
+		                FROM STAFF_ORG A,
+		                     ORGANIZATION B
+		                WHERE A.ORG_ID = B.ORG_ID
+		                AND A.STAFF_ID = S.STAFF_ID
+		              ) SELF_ORG_ID,
+       				 (
+		                SELECT wm_concat(B.ORG_NAME)
+		                FROM STAFF_ORG A,
+		                     ORGANIZATION B
+		                WHERE A.ORG_ID = B.ORG_ID
+		                AND A.STAFF_ID = S.STAFF_ID
+		              ) SELF_ORG_NAME,
+		                (
+		                  SELECT M.REGION_NAME
+		                  FROM MANAGE_REGION M
+		                  WHERE M.REGION_ID = S.REGION_ID
+		                ) SELF_REGION_NAME
+	  FROM STAFF s
+	  LEFT JOIN INDIVIDUAL i ON s.STAFF_ID = i.STAFF_ID
+	  LEFT JOIN STAFF_CONTACT c ON s.STAFF_ID = c.STAFF_ID
+	  LEFT JOIN STAFF staffParent ON s.PARENT_STAFF_ID = staffParent.STAFF_ID
+	  LEFT JOIN STAFF staffB ON s.STAFFB_ID = staffB.STAFF_ID
+	  LEFT JOIN STAFF staffC ON s.STAFFC_ID = staffC.STAFF_ID
+	 WHERE S.STAFF_ID IN
+	 		 <foreach collection="staffIds" index="index" item="staffId" open="(" separator="," close=")">
+	                #{staffId}       
+	          </foreach>
+		
+	</select>
+	
+	<insert id="save">
+		INSERT INTO STAFF
+		  (STAFF_ID,
+		   USER_NAME,
+		   PASSWD,
+		   STAFF_NAME,
+		   STATE,
+		   REGION_ID,
+		   STAFF_DESC,
+		   STAFF_LEVEL,
+		   ORG_ID,
+		   STAFF_POST,
+		   STAFFB_ID,
+		   STAFFC_ID,
+		   PARENT_STAFF_ID,
+		   PRI_LEVEL,
+		   STAFF_GUID,
+		   CALLED_NAME)
+		VALUES
+		  (#{id},
+		   #{userName},
+		   #{encodePasswd},
+		   #{staffName},
+		   #{state},
+		   #{regionId},
+		   #{staffDesc},
+		   #{staffLevel},
+		   #{organization.id},
+		   #{staffPost},
+		   #{staffbId},
+		   #{staffcId},
+		   #{parentId},
+		   #{priLevel},
+		   SYS_GUID(),
+		   #{calledName})
+	</insert>
+	
+	<update id="update">	
+		UPDATE STAFF
+		   SET STAFF_NAME      = #{staffName},
+		       STAFF_LEVEL     = #{staffLevel},
+		       STAFF_DESC      = #{staffDesc},
+		       REGION_ID       = #{regionId},
+		       STAFF_POST      = #{staffPost},
+		       STAFFB_ID       = #{staffPost},
+		       STAFFC_ID       = #{staffcId},
+		       PARENT_STAFF_ID = #{parentId},
+		       USER_NAME       = #{userName},
+		       ORG_ID          = #{orgId},
+		       PRI_LEVEL       = #{priLevel},
+		       CALLED_NAME     = #{calledName})
+		 WHERE STAFF_ID = ${id}
+	</update>
+	
+	<update id="delete">
+		UPDATE STAFF SET STATE = '2VX' WHERE STAFF_ID = #{id}
+	</update>
+	
+	<update id="unDelete">
+		UPDATE STAFF SET STATE = '2VA' WHERE STAFF_ID = #{id}
+	</update>
+	
+	<select id="getNewStaffId" resultType="Long">
+		SELECT STAFF_ID_SEQ.Nextval FROM DUAL
+	</select>
+	
+	<select id="findAllByOrgId" resultType="com.ffcs.itm.web.basic.entity.dto.ListStaffDto">
+		SELECT A.STAFF_ID staffId,
+		       A.STAFF_TYPE staffType,
+		       A.STAFF_NAME staffName,
+		       A.USER_NAME userName,
+		       (SELECT STRCAT(BLC.NAME)
+		          FROM BPR_LINE_CFG BLC, STAFF_BPR_RELA SBR
+		         WHERE BLC.BPR_LINE_CFG_ID = SBR.BPR_LINE_CFG_ID
+		           AND SBR.STAFF_ID = A.STAFF_ID) bprLineName,
+		       B.STAFF_NAME parentName,
+		       E.LIST_LABEL postName,
+		       C.REGION_NAME regionName,
+		       DECODE(A.STATE, '2VD', 0, '2VF', 2, '2VX', 3, 1) STATE_SORT,
+		       A.STATE,
+		       A.ORG_ID orgId,
+		       f.ORG_NAME orgName,
+		       (SELECT LIST_LABEL
+		          FROM TP_DOMAIN_LISTVALUES TP
+		         WHERE DOMAIN_CODE = 'DOMAIN_STAFF_STATE'
+		           AND TP.LIST_VALUE = A.STATE) stateName,
+		           (SELECT wm_concat(B.ORG_ID)
+			          FROM STAFF_ORG SO, ORGANIZATION B
+			         WHERE SO.ORG_ID = B.ORG_ID
+			           AND SO.STAFF_ID = A.STAFF_ID) orgIds
+		  FROM STAFF A,
+		       STAFF B,
+		       MANAGE_REGION C,
+		       (SELECT DOMAIN_CODE, LIST_VALUE, LIST_LABEL
+		          FROM TP_DOMAIN_LISTVALUES
+		         WHERE DOMAIN_CODE = 'DOMAIM_STAFF_POST') E,
+		       ORGANIZATION F,
+		       STAFF G,
+		       STAFF_ORG H
+		 WHERE G.STAFF_ID(+) = F.PRINCIPAL
+		   AND H.ORG_ID = F.ORG_ID
+		   AND B.STAFF_ID(+) = A.PARENT_STAFF_ID
+		   AND A.REGION_ID = C.REGION_ID
+		   AND A.STAFF_POST = E.LIST_VALUE(+)
+		   AND A.STAFF_ID = H.STAFF_ID
+		   AND H.ORG_ID = #{orgId}
+		   AND A.DEL_FLAG = '0BF'
+		 ORDER BY STATE_SORT, A.SORT_ID, A.STAFF_ID
+	</select>
+	
+	<select id="findByUserName" resultMap="StaffResult">
+        SELECT s.*,
+               i.*,
+               c.*,
+               staffParent.STAFF_NAME PARENT_STAFF_NAME,
+               staffB.STAFF_NAME      STAFFB_NAME,
+               staffC.STAFF_NAME      STAFFC_NAME,
+               mr.REGION_LEVEL
+          FROM STAFF s
+          LEFT JOIN INDIVIDUAL i
+            ON s.STAFF_ID = i.STAFF_ID
+          LEFT JOIN STAFF_CONTACT c
+            ON s.STAFF_ID = c.STAFF_ID
+          LEFT JOIN STAFF staffParent
+            ON s.PARENT_STAFF_ID = staffParent.STAFF_ID
+          LEFT JOIN STAFF staffB
+            ON s.STAFFB_ID = staffB.STAFF_ID
+          LEFT JOIN STAFF staffC
+            ON s.STAFFC_ID = staffC.STAFF_ID
+          LEFT JOIN MANAGE_REGION mr
+            ON s.REGION_ID = mr.REGION_ID
+         WHERE s.USER_NAME = #{userName}
+	</select>
+	
+	<!-- 测试分页 -->
+	<select id="findAll" resultType="com.ffcs.itm.web.basic.entity.Staff">
+		SELECT STAFF_ID id, STAFF_NAME name FROM STAFF
+		<where>
+            <if test="params != null and params.staffName != null">
+                STAFF_NAME LIKE #{params.staffName}
+            </if>
+        </where>
+	</select>
+
+	<select id="getStaffListByIds" resultType="com.ffcs.itm.web.basic.entity.Staff">
+        SELECT STAFF_ID id, STAFF_NAME staffName
+          FROM STAFF
+         WHERE STAFF_ID IN (
+            <foreach collection="list" item="id" separator=",">
+                #{id}
+            </foreach>
+		)
+	</select>
+	
+	<select id='getProjectTree' resultType="Map">
+		SELECT GROUP_ID,
+		       GROUP_NAME,
+		       LEVEL,
+		       NVL(PARENT_GROUP_ID, -1) PARENT_GROUP_ID,
+		       (
+		          SELECT COUNT(T.GROUP_ID)
+		          FROM PROJECT_GROUP T
+		          WHERE T.PARENT_GROUP_ID = P.GROUP_ID
+		       ) CHILD_COUNT
+		  FROM PROJECT_GROUP P
+		 WHERE STATE = '0SA'
+		   AND PROJECT_GROUP_TYPE IN ('TEAM', 'DUTY')
+		CONNECT BY PRIOR GROUP_ID = PARENT_GROUP_ID
+
+		<if test="startProjectId!=null">
+			<![CDATA[
+			 START WITH GROUP_ID = #{startProjectId}
+			  AND LEVEL <= 2
+			 
+			 ]]>
+		</if>
+		<if test="startProjectId ==null">
+			 start with parent_group_id is null
+		</if>
+		ORDER SIBLINGS BY SORT_ID
+		
+	</select>
+	
+	<select id='getFavoriteGroupListById'   resultType="Map">
+		SELECT A.GROUP_ID ID, B.GROUP_NAME NAME, 'FAVORITE' BPR_LINE_CFG_ID,'DEFINE'  SEARCH_TYPE
+		  FROM USER_FAVORITE_GROUP_CFG A, PROJECT_GROUP B
+		 WHERE A.STAFF_ID = #{staffId}
+		   AND A.GROUP_ID = B.GROUP_ID
+		   AND A.GROUP_ID = #{groupId}
+	</select>
+	
+	<select id='getFavoriteGroupList'   resultType="Map">
+		SELECT A.GROUP_ID ID, B.GROUP_NAME NAME, 'FAVORITE' BPR_LINE_CFG_ID,'DEFINE'  SEARCH_TYPE
+		  FROM USER_FAVORITE_GROUP_CFG A, PROJECT_GROUP B
+		 WHERE A.STAFF_ID = #{staffId}
+		   AND A.GROUP_ID = B.GROUP_ID
+		 ORDER BY ID
+	</select>
+
+	<update	id="updateStaffPwd">
+		UPDATE STAFF SET PASSWD = #{requestPwd} WHERE STAFF_ID = #{staffId}
+	</update>
+
+	<select id="getPopoverHtml" resultType="string">
+		SELECT SYS_VAR_VALUE FROM SYS_CONFIG WHERE SYS_VAR = 'RESET_PWD_POPOVER_HTML'
+	</select>
+</mapper>

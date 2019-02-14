@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ffcs.itm.web.check.weeklyList.repository.GoodWeeklyMapper">
+
+    <resultMap id="GoodWeeklyMap" type="com.ffcs.itm.web.check.weeklyList.entity.GoodWeekly">
+        <id property="topId" column="TOP_ID"></id>
+        <result property="topStaffId" column="TOP_STAFF_ID"></result>
+        <result property="visitCreateDate" column="VISIT_CREATE_DATE"></result>
+        <result property="weeklyId" column="WEEKLY_ID"></result>
+    </resultMap>
+    <resultMap id="staffMap" type="com.ffcs.itm.web.check.entity.StaffUser">
+        <id property="staffId" column="STAFF_ID"/>
+        <result column="STAFF_NAME" property="staffname"/>
+    </resultMap>
+    <resultMap id="weeklyListStaffMap" type="com.ffcs.itm.web.check.entity.CheckWeeklyList">
+        <id property="weeklyId" column="WEEKLY_ID"></id>
+        <result property="subjectName" column="SUBJECT_NAME"></result>
+        <result column="SUBJECT_GROUP_TYPE" property="subjectGroupType"></result>
+        <result column="KEY_WORD" property="keyWord"></result>
+    </resultMap>
+    <resultMap id="GoodWeeklyMapAssocial" type="com.ffcs.itm.web.check.weeklyList.entity.GoodWeekly">
+        <id property="topId" column="TOP_ID"></id>
+        <result property="topStaffId" column="TOP_STAFF_ID"></result>
+        <result property="visitCreateDate" column="VISIT_CREATE_DATE"></result>
+        <result property="weeklyId" column="WEEKLY_ID"></result>
+    </resultMap>
+
+
+    <select id="selectAllGoodWeekly" resultMap="GoodWeeklyMapAssocial">
+        SELECT * FROM  CHECK_WEEKLY_TOP
+    </select>
+    <select id="GoodWeeklyByStaff" parameterType="java.lang.Integer" resultMap="staffMap">
+       select st.STAFF_ID ,st.STAFF_NAME
+        from
+        staff st
+        WHERE st.STAFF_ID=#{topStaffId}
+    </select>
+    <select id="selectTopWeeklyName" parameterType="java.lang.Integer" resultMap="weeklyListStaffMap">
+        SELECT cwl.SUBJECT_NAME,cwl.WEEKLY_ID,cwl.SUBJECT_GROUP_TYPE,cwl.KEY_WORD
+        FROM
+        Check_weekly_list cwl
+        WHERE cwl.WEEKLY_ID=#{weeklyId}
+    </select>
+
+    <insert id="addOneGoodWeekly">
+        INSERT INTO CHECK_WEEKLY_TOP
+        (TOP_ID,
+         TOP_STAFF_ID,
+         VISIT_CREATE_DATE,
+         WEEKLY_ID)
+        VALUES
+        (CHECK_WEEKLY_TOP_seq.nextval,
+        #{staffId},
+        sysdate,
+        #{weeklyId})
+    </insert>
+    <!--同一个周报不可以被同一个人重复推荐-->
+    <select id="checkTopAgain" resultMap="GoodWeeklyMap">
+        SELECT * FROM CHECK_WEEKLY_TOP CWT
+        WHERE
+        CWT.TOP_STAFF_ID=#{staffId}
+        AND
+        CWT.WEEKLY_ID=#{weeklyId}
+    </select>
+
+
+    <delete id="delCheckGoodWeekly">
+        DELETE FROM CHECK_WEEKLY_TOP CWT
+        WHERE
+        CWT.TOP_STAFF_ID=#{staffId}
+        AND
+        CWT.TOP_ID=#{topId}
+    </delete>
+    <select id="SelectGoodCheckStaffId" parameterType="java.lang.Integer" resultMap="GoodWeeklyMap">
+        SELECT * FROM CHECK_WEEKLY_TOP CWT
+        WHERE
+        CWT.TOP_ID=#{topId}
+    </select>
+
+
+    <delete id="delCheckGoodByWeekly" parameterType="java.lang.Integer">
+        DELETE FROM CHECK_WEEKLY_TOP CWT
+        WHERE
+        WEEKLY_ID=#{weeklyId}
+    </delete>
+
+</mapper>

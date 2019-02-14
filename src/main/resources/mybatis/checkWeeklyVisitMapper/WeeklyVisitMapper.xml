@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ffcs.itm.web.check.weeklyList.repository.WeeklyVisitMapper">
+
+    <resultMap id="VisitListMap" type="com.ffcs.itm.web.check.weeklyList.entity.CheckWeeklyVisitList">
+        <id property="visitId" column="VISIT_ID"></id>
+        <result property="visitStaffId" column="VISIT_STAFF_ID"></result>
+        <result property="visitCreateDate" column="VISIT_CREATE_DATE"></result>
+        <result property="weeklyId" column="WEEKLY_ID"></result>
+        <association property="staffUser" javaType="com.ffcs.itm.web.check.entity.StaffUser">
+            <id property="staffId" column="STAFF_ID"></id>
+            <result property="staffname" column="STAFF_NAME"></result>
+        </association>
+    </resultMap>
+
+    <resultMap id="VisitTimeMap" type="com.ffcs.itm.web.check.weeklyList.entity.CheckWeeklyVisitList">
+        <id property="visitId" column="VISIT_ID"></id>
+        <result property="visitStaffId" column="VISIT_STAFF_ID"></result>
+        <result property="visitCreateDate" column="VISIT_CREATE_DATE"></result>
+        <result property="weeklyId" column="WEEKLY_ID"></result>
+    </resultMap>
+
+    <select id="selectVisitList" parameterType="java.lang.Integer" resultMap="VisitListMap">
+        select cwvl.*, st.staff_name, st.staff_id
+            from (select *
+                    from CHECK_WEEKLY_VISIT_LIST
+                   order by VISIT_CREATE_DATE desc) cwvl
+            left join staff st
+              on cwvl.VISIT_STAFF_ID = st.staff_id
+           where cwvl.weekly_id = #{weeklyId}
+    </select>
+
+    <insert id="addOneVisitTravel">
+         insert into CHECK_WEEKLY_VISIT_LIST
+           (VISIT_ID, VISIT_STAFF_ID, VISIT_CREATE_DATE, WEEKLY_ID)
+         values
+           (CHECK_WEEKLY_VISIT_LIST_seq.Nextval, #{staffId}, sysdate, #{weeklyId})
+    </insert>
+    <select id="selectByTimeAdd" parameterType="java.lang.Integer" resultMap="VisitTimeMap">
+          select *
+              from (select cwvl.*, rownum as rn
+                      from (select *
+                              from CHECK_WEEKLY_VISIT_LIST cwvl
+                             order by VISIT_CREATE_DATE desc) cwvl)
+             where rn = 1
+               and weekly_id = #{weeklyId}
+    </select>
+    <update id="updateOneVisit" parameterType="java.lang.Integer">
+         UPDATE CHECK_WEEKLY_VISIT_LIST cwvl
+         SET
+            cwvl.VISIT_CREATE_DATE=sysdate
+        WHERE
+              cwvl.VISIT_ID = #{visitId}
+    </update>
+
+    <select id="selectCount" parameterType="java.lang.Integer" resultType="java.lang.Integer">
+        select count(*) FROM CHECK_WEEKLY_VISIT_LIST WHERE  weekly_id=#{weeklyId}
+    </select>
+
+    <delete id="delVisitByWeekly" parameterType="java.lang.Integer">
+        DELETE  FROM CHECK_WEEKLY_VISIT_LIST
+        WHERE
+        WEEKLY_ID=#{weeklyId}
+    </delete>
+</mapper>

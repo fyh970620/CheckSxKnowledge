@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ffcs.itm.web.basic.repository.StaffContactMapper">
+	<resultMap id="StaffContactResult" type="com.ffcs.itm.web.basic.entity.StaffContact">
+		<id column="STAFF_ID" jdbcType="DECIMAL" property="staffId" />
+		<result column="LINKMAN_NAME" jdbcType="VARCHAR" property="linkmanName" />
+		<result column="MOBILE" jdbcType="VARCHAR" property="mobile" />
+		<result column="PHS" jdbcType="VARCHAR" property="phs" />
+		<result column="TEL" jdbcType="VARCHAR" property="tel" />
+		<result column="ADDRESS" jdbcType="VARCHAR" property="address" />
+		<result column="FAX" jdbcType="VARCHAR" property="fax" />
+		<result column="EMAIL" jdbcType="VARCHAR" property="email" />
+		<result column="REMARK" jdbcType="VARCHAR" property="remark" />
+		<result column="VOICE" jdbcType="VARCHAR" property="voice" />
+		<result column="SMS_RECEIVE" jdbcType="VARCHAR" property="smsReceive" />
+		<result column="ISSEND" jdbcType="VARCHAR" property="issend" />
+		<result column="SMS_GATEWAY" jdbcType="VARCHAR" property="smsGateway" />
+	</resultMap>
+	
+	<insert id="save">
+		INSERT INTO STAFF_CONTACT
+		  (STAFF_ID,
+		   LINKMAN_NAME,
+		   MOBILE,
+		   TEL,
+		   ADDRESS,
+		   FAX,
+		   EMAIL,
+		   REMARK,
+		   PHS,
+		   VOICE,
+		   SMS_RECEIVE,
+		   ISSEND,
+		   SMS_GATEWAY)
+		VALUES
+		  (#{staffId},
+		   #{linkmanName},
+		   #{mobile},
+		   #{tel},
+		   #{address},
+		   #{fax},
+		   #{email},
+		   #{remark},
+		   #{phs},
+		   #{voice},
+		   #{smsReceive},
+		   #{issend},
+		   #{smsGateway})
+	</insert>
+	
+	<update id="update">
+		UPDATE STAFF_CONTACT
+		   SET LINKMAN_NAME = #{linkmanName},
+		       MOBILE       = #{mobile},
+		       TEL          = #{tel},
+		       ADDRESS      = #{address},
+		       FAX          = #{fax},
+		       EMAIL        = #{fax},
+		       REMARK       = #{remark},
+		       PHS          = #{phs},
+		       VOICE        = #{voice},
+		       SMS_RECEIVE  = #{smsReceive},
+		       ISSEND       = #{issend},
+		       SMS_GATEWAY  = #{smsGateway}
+		 WHERE STAFF_ID = #{staffId}
+	</update>
+</mapper>

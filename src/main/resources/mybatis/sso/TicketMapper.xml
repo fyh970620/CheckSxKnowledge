@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ffcs.itm.web.sso.respository.TicketMapper">
+	<!-- 获取双向单点配置 -->
+	<select id="getSsoCfg" resultType="com.ffcs.itm.web.sso.entity.ItmSsoCfg">
+		SELECT OLD_SYS_HOST host, OLD_SYS_JUMP_LINK jumpLink
+		  FROM ITM_SSO_CFG t
+		 WHERE rownum = 1
+	</select>
+	
+	<update id="updateSsoKey">
+		UPDATE ITM_SSO_KEY
+		   SET TICKET_KEY = #{ticketKey}, TICKET_TIME_KEY = #{ticketTimeKey}
+		 WHERE KEY_ID = 1
+		 <![CDATA[
+		   AND TRUNC(UPDATE_TIME) < TRUNC(sysdate)
+		 ]]>
+	</update>
+	
+	<select id="getSsoKey" resultType="com.ffcs.itm.web.sso.entity.ItmSsoKey">
+		SELECT TICKET_KEY      ticketKey,
+		       TICKET_TIME_KEY ticketTimeKey,
+		       UPDATE_TIME     updateTime
+		  FROM ITM_SSO_KEY
+		 WHERE KEY_ID = 1
+		<if test="isCurrentDate == true">
+			AND TRUNC(UPDATE_TIME) = TRUNC(sysdate)
+		</if>	
+	</select>
+</mapper>

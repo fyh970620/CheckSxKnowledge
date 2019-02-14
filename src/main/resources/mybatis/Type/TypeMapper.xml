@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ffcs.itm.web.check.TypeValue.repository.TypeMapper">
+
+    <resultMap id="TpDomainListMap" type="com.ffcs.itm.web.check.entity.TpDomainListvalues">
+        <result property="domainCode" column="DOMAIN_CODE"></result>
+        <result property="TypeId" column="LIST_VALUE"></result>
+        <result property="TypeValue" column="LIST_LABEL"></result>
+    </resultMap>
+
+    <!--groupTypeId and value -->
+    <select id="selectGroupType" resultMap="TpDomainListMap">
+        SELECT t.LIST_VALUE,t.LIST_LABEL FROM tp_domain_listvalues t
+        WHERE
+        DOMAIN_CODE='DOMAIN_SUBJECT_GROUP_TYPE'
+    </select>
+
+    <!--staffType and value -->
+    <select id="selectStaffType" resultMap="TpDomainListMap">
+        SELECT t.LIST_VALUE,t.LIST_LABEL FROM tp_domain_listvalues t
+        WHERE
+        DOMAIN_CODE='DOMAIN_WEEKLY_STAFF_TYPE'
+    </select>
+
+    <select id="selectListType" resultMap="TpDomainListMap">
+        SELECT t.LIST_VALUE,t.LIST_LABEL FROM tp_domain_listvalues t
+        WHERE
+        DOMAIN_CODE='DOMAIN_KNOW_LIST_TYPE'
+    </select>
+
+    <!--   -->
+    <select id="selectGroupName" parameterType="java.lang.String" resultType="java.lang.String">
+        SELECT t.LIST_LABEL FROM tp_domain_listvalues t
+        WHERE
+         DOMAIN_CODE='DOMAIN_SUBJECT_GROUP_TYPE' AND t.LIST_VALUE=#{keywords1}
+    </select>
+    <select id="selectStaffTypeName" parameterType="java.lang.String" resultType="java.lang.String">
+        SELECT t.LIST_LABEL FROM tp_domain_listvalues t
+        WHERE
+        DOMAIN_CODE='DOMAIN_WEEKLY_STAFF_TYPE' AND t.LIST_VALUE=#{keywords2}
+    </select>
+    <select id="selectListTypeName" parameterType="java.lang.String" resultType="java.lang.String">
+        SELECT t.LIST_LABEL FROM tp_domain_listvalues t
+        WHERE
+        DOMAIN_CODE='DOMAIN_KNOW_LIST_TYPE' AND t.LIST_VALUE=#{keywords3}
+    </select>
+</mapper>
